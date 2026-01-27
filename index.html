@@ -4,81 +4,415 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bank Analyzer - NLB Statement Dashboard</title>
-  <meta name="description" content="Analyze your NLB bank statements">
-  <meta name="theme-color" content="#0f172a">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
-    .mono { font-family: monospace; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; }
+    body { 
+      font-family: 'Inter', -apple-system, sans-serif; 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+      color: #f8fafc; 
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    /* Header */
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { 
+      width: 44px; height: 44px; 
+      background: linear-gradient(135deg, #34d399, #22d3ee); 
+      border-radius: 12px; 
+      display: flex; align-items: center; justify-content: center; 
+      font-size: 22px; 
+    }
+    .logo h1 { font-size: 20px; font-weight: 600; }
+    .logo p { font-size: 12px; color: #64748b; }
+    
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      background: rgba(30, 41, 59, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.dragging {
+      border-color: #34d399;
+      background: rgba(52, 211, 153, 0.1);
+    }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 48px; margin-bottom: 16px; }
+    .upload-zone h3 { font-size: 18px; margin-bottom: 8px; }
+    .upload-zone p { color: #64748b; font-size: 14px; }
+    
+    /* File tags */
+    .file-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .file-tag { 
+      padding: 6px 12px; 
+      background: rgba(52, 211, 153, 0.2); 
+      color: #34d399; 
+      border-radius: 20px; 
+      font-size: 13px; 
+    }
+    
+    /* Cards Grid */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card {
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card-income { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.2); }
+    .card-expense { background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.2); }
+    .card-balance { background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.05)); border-color: rgba(34, 211, 238, 0.2); }
+    .card-label { color: #94a3b8; font-size: 14px; margin-bottom: 8px; }
+    .card-value { font-size: 28px; font-weight: 700; font-family: monospace; }
+    .card-value.green { color: #34d399; }
+    .card-value.red { color: #fb7185; }
+    .card-value.blue { color: #22d3ee; }
+    
+    /* Charts */
+    .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .chart-box {
+      padding: 24px;
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+    }
+    .chart-box h3 { font-size: 16px; margin-bottom: 20px; }
+    .chart-container { position: relative; height: 280px; }
+    
+    /* Category list */
+    .category-list { margin-top: 16px; }
+    .category-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 8px;
+      background: rgba(51, 65, 85, 0.3);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .category-item:hover { background: rgba(51, 65, 85, 0.5); }
+    .category-item.active { background: #334155; }
+    .category-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .category-info { flex: 1; }
+    .category-name { font-weight: 500; margin-bottom: 4px; }
+    .category-bar { height: 4px; background: #334155; border-radius: 2px; }
+    .category-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+    .category-amount { font-family: monospace; color: #94a3b8; }
+    .category-percent { color: #64748b; font-size: 13px; width: 50px; text-align: right; }
+    
+    /* Transactions */
+    .transactions {
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .transactions-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .transactions-header h3 { font-size: 16px; }
+    .transactions-count { color: #64748b; font-size: 13px; }
+    .transaction {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid #1e293b;
+      transition: background 0.2s;
+    }
+    .transaction:hover { background: rgba(51, 65, 85, 0.3); }
+    .transaction:last-child { border-bottom: none; }
+    .transaction-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .transaction-details { flex: 1; min-width: 0; }
+    .transaction-desc { 
+      font-weight: 500; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .transaction-meta { font-size: 12px; color: #64748b; }
+    .transaction-cat { 
+      padding: 2px 8px; 
+      border-radius: 10px; 
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .transaction-amount { text-align: right; }
+    .transaction-amount-value { font-weight: 600; font-family: monospace; }
+    .transaction-amount-value.positive { color: #34d399; }
+    .transaction-balance { font-size: 11px; color: #64748b; margin-top: 2px; }
+    
+    .show-more {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: none;
+      border-top: 1px solid #1e293b;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .show-more:hover { background: rgba(51, 65, 85, 0.3); color: #e2e8f0; }
+    
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-clear {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .btn-clear:hover { background: rgba(239, 68, 68, 0.2); }
+    .btn-filter {
+      padding: 4px 12px;
+      background: #334155;
+      color: #94a3b8;
+      border-radius: 20px;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #64748b;
+    }
+    .empty-state-icon { font-size: 64px; margin-bottom: 20px; }
+    .empty-state h2 { color: #e2e8f0; margin-bottom: 8px; }
+    
+    /* Footer */
+    .footer { text-align: center; padding: 32px 0; color: #64748b; font-size: 13px; }
+    
+    /* Spinner */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #334155;
+      border-top-color: #22d3ee;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Hide class */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">💳</div>
+        <div>
+          <h1>Bank Analyzer</h1>
+          <p>NLB Statement Dashboard</p>
+        </div>
+      </div>
+      <div id="headerActions" class="hidden">
+        <span id="txnCount" style="color: #94a3b8; font-size: 14px; margin-right: 12px;"></span>
+        <button class="btn btn-clear" onclick="clearAllData()">🗑️ Clear All</button>
+      </div>
+    </header>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".pdf" multiple>
+      <div id="uploadContent">
+        <div class="upload-icon">📄</div>
+        <h3>Drop NLB bank statements here</h3>
+        <p>or click to browse • PDF files only</p>
+      </div>
+      <div id="uploadLoading" class="hidden">
+        <div class="spinner"></div>
+        <h3>Processing...</h3>
+      </div>
+      <div class="file-tags" id="fileTags"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <h2>No transactions yet</h2>
+      <p>Upload your NLB bank statement PDFs to see analytics</p>
+    </div>
+
+    <!-- Dashboard (hidden by default) -->
+    <div id="dashboard" class="hidden">
+      <!-- Summary Cards -->
+      <div class="cards">
+        <div class="card card-income">
+          <div class="card-label">💰 Total Income</div>
+          <div class="card-value green" id="totalIncome">€0.00</div>
+        </div>
+        <div class="card card-expense">
+          <div class="card-label">💸 Total Expenses</div>
+          <div class="card-value red" id="totalExpenses">€0.00</div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-label">📈 Net Balance</div>
+          <div class="card-value blue" id="netBalance">€0.00</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts">
+        <div class="chart-box">
+          <h3>📊 Spending by Category</h3>
+          <div class="chart-container">
+            <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-box">
+          <h3>📉 Balance Over Time</h3>
+          <div class="chart-container">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="chart-box">
+        <h3>📋 Category Breakdown</h3>
+        <div class="category-list" id="categoryList"></div>
+      </div>
+
+      <!-- Transactions -->
+      <div class="transactions">
+        <div class="transactions-header">
+          <h3>📝 <span id="txnTitle">Recent Transactions</span>
+            <button class="btn btn-filter hidden" id="clearFilter" onclick="clearFilter()">Clear filter ×</button>
+          </h3>
+          <span class="transactions-count" id="txnListCount"></span>
+        </div>
+        <div id="transactionList"></div>
+        <button class="show-more hidden" id="showMoreBtn" onclick="toggleShowAll()">Show all transactions</button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        Bank Analyzer • Your data is stored locally in your browser
+      </footer>
+    </div>
+  </div>
+
   <script>
+    // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  </script>
-  <script type="text/babel">
-    const { useState, useCallback, useEffect } = React;
-    const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } = Recharts;
 
-    const CATEGORY_RULES = {
-      'Groceries': ['LIDL', 'HOFER', 'SPAR', 'INTERSPAR', 'MERCATOR', 'SUPERMARKET'],
-      'Fuel': ['MOL', 'PETROL', 'OMV', 'ESSO', 'Shell'],
-      'Restaurants': ['MCDONALDS', 'PUB', 'BAR', 'RESTAVRACIJA', 'PIVNICA', 'GOSTILNA'],
-      'Travel': ['ASFINAG', 'DARS', 'EVINJETA', 'BOOKING', 'HOTEL', 'TERME', 'AVTOCAMP', 'Railways'],
-      'Shopping': ['ZARA', 'AMAZON', 'AMZN', 'ALDI', 'H&M'],
-      'Entertainment': ['BOLDER SCENA', 'OLAII', 'VSTOPNICE', 'KINO'],
-      'Transportation': ['CAR PAYMENT', 'AUTOHAUS', 'TEHNICNI PREGLEDI'],
-      'Transfers': ['REVOLUT', 'QUASI CASH'],
-      'Services': ['POSTA', 'PROVIZIJA', 'TELEKOM'],
-      'Income': ['ADRIAL', 'REDNO DELO']
+    // App State
+    var transactions = [];
+    var uploadedFiles = [];
+    var selectedCategory = null;
+    var showAll = false;
+    var pieChart = null;
+    var lineChart = null;
+
+    // Category configuration
+    var CATEGORIES = {
+      'Groceries': { keywords: ['LIDL', 'HOFER', 'SPAR', 'INTERSPAR', 'MERCATOR', 'SUPERMARKET'], color: '#10B981', icon: '🛒' },
+      'Fuel': { keywords: ['MOL', 'PETROL', 'OMV', 'ESSO', 'SHELL'], color: '#F59E0B', icon: '⛽' },
+      'Restaurants': { keywords: ['MCDONALDS', 'PUB', 'BAR', 'RESTAVRACIJA', 'PIVNICA', 'GOSTILNA', 'NEBO'], color: '#EC4899', icon: '🍔' },
+      'Travel': { keywords: ['ASFINAG', 'DARS', 'EVINJETA', 'BOOKING', 'HOTEL', 'TERME', 'AVTOCAMP', 'RAILWAYS'], color: '#3B82F6', icon: '✈️' },
+      'Shopping': { keywords: ['ZARA', 'AMAZON', 'AMZN', 'ALDI', 'H&M'], color: '#8B5CF6', icon: '🛍️' },
+      'Entertainment': { keywords: ['BOLDER SCENA', 'OLAII', 'VSTOPNICE', 'KINO'], color: '#06B6D4', icon: '🎬' },
+      'Transportation': { keywords: ['CAR PAYMENT', 'AUTOHAUS', 'TEHNICNI PREGLEDI'], color: '#EF4444', icon: '🚗' },
+      'Transfers': { keywords: ['REVOLUT', 'QUASI CASH'], color: '#6366F1', icon: '💸' },
+      'Services': { keywords: ['POSTA', 'PROVIZIJA', 'TELEKOM'], color: '#64748B', icon: '📋' },
+      'Income': { keywords: ['ADRIAL', 'REDNO DELO'], color: '#22C55E', icon: '💰' },
+      'Other': { keywords: [], color: '#94A3B8', icon: '💳' }
     };
 
-    const COLORS = {
-      'Groceries': '#10B981', 'Fuel': '#F59E0B', 'Restaurants': '#EC4899',
-      'Travel': '#3B82F6', 'Shopping': '#8B5CF6', 'Entertainment': '#06B6D4',
-      'Transportation': '#EF4444', 'Transfers': '#6366F1', 'Services': '#64748B',
-      'Income': '#22C55E', 'Other': '#94A3B8'
-    };
+    // Format currency
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+    }
 
-    function categorize(desc) {
-      const upper = desc.toUpperCase();
-      for (const [cat, keys] of Object.entries(CATEGORY_RULES)) {
-        if (keys.some(k => upper.includes(k))) return cat;
+    // Categorize transaction
+    function categorize(description) {
+      var upper = description.toUpperCase();
+      for (var cat in CATEGORIES) {
+        var keywords = CATEGORIES[cat].keywords;
+        for (var i = 0; i < keywords.length; i++) {
+          if (upper.indexOf(keywords[i]) !== -1) return cat;
+        }
       }
       return 'Other';
     }
 
+    // Parse NLB statement text
     function parseStatement(text) {
-      const txns = [];
-      const lines = text.split('\n');
-      const pattern = /(\d{2}\.\d{2}\.\d{2})\s+(.+?)\s+([+-]?\d+[.,]\d{2})\s+(\d+[.,]\d{2})/;
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line || line.includes('STANJE') || line.includes('SKUPNI') || line.includes('Datum')) continue;
-        
-        const match = line.match(pattern);
+      var txns = [];
+      var lines = text.split(/\n/);
+      var pattern = /(\d{2}\.\d{2}\.\d{2})\s+(.+?)\s+([+-]?\d{1,3}(?:[\.,]\d{3})*[\.,]\d{2})\s+(\d{1,3}(?:[\.,]\d{3})*[\.,]\d{2})/;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line || /STANJE|SKUPNI|Datum|LETNA|EUR\s*-|NLB PAKET|Obvestilo|Varnostna/i.test(line)) continue;
+
+        var match = line.match(pattern);
         if (match) {
-          let [, date, desc, amtStr, balStr] = match;
-          let amt = parseFloat(amtStr.replace(/\./g, '').replace(',', '.'));
-          const bal = parseFloat(balStr.replace(/\./g, '').replace(',', '.'));
+          var date = match[1];
+          var desc = match[2];
+          var amtStr = match[3];
+          var balStr = match[4];
           
-          if (!amtStr.startsWith('+') && !amtStr.startsWith('-')) {
-            if (!desc.toUpperCase().includes('ADRIAL')) amt = -Math.abs(amt);
+          var amt = parseFloat(amtStr.replace(/\./g, '').replace(',', '.'));
+          var bal = parseFloat(balStr.replace(/\./g, '').replace(',', '.'));
+
+          // Determine sign
+          if (amtStr.charAt(0) !== '+' && amtStr.charAt(0) !== '-') {
+            var isIncome = /ADRIAL|REDNO DELO/i.test(desc);
+            if (!isIncome) amt = -Math.abs(amt);
           }
-          
+
           txns.push({
-            id: `${date}-${i}`,
-            date, description: desc.trim(), amount: amt, balance: bal,
+            id: date + '-' + i + '-' + Math.random().toString(36).substr(2, 5),
+            date: date,
+            description: desc.trim(),
+            amount: amt,
+            balance: bal,
             category: categorize(desc)
           });
         }
@@ -86,298 +420,396 @@
       return txns;
     }
 
-    async function extractPDF(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
-            let text = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const content = await page.getTextContent();
-              text += content.items.map(item => item.str).join(' ') + '\n';
+    // Extract text from PDF
+    function extractPDF(file) {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var typedArray = new Uint8Array(e.target.result);
+          pdfjsLib.getDocument({ data: typedArray }).promise.then(function(pdf) {
+            var text = '';
+            var promises = [];
+            for (var i = 1; i <= pdf.numPages; i++) {
+              promises.push(
+                pdf.getPage(i).then(function(page) {
+                  return page.getTextContent().then(function(content) {
+                    return content.items.map(function(item) { return item.str; }).join(' ');
+                  });
+                })
+              );
             }
-            resolve(text);
-          } catch (err) { reject(err); }
+            Promise.all(promises).then(function(pages) {
+              resolve(pages.join('\n'));
+            });
+          }).catch(reject);
         };
         reader.onerror = reject;
         reader.readAsArrayBuffer(file);
       });
     }
 
-    function fmt(n) {
-      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
-    }
-
-    function App() {
-      const [txns, setTxns] = useState([]);
-      const [files, setFiles] = useState([]);
-      const [loading, setLoading] = useState(false);
-      const [dragging, setDragging] = useState(false);
-      const [filter, setFilter] = useState(null);
-      const [showAll, setShowAll] = useState(false);
-
-      useEffect(() => {
-        const saved = localStorage.getItem('bankData');
-        if (saved) {
-          const data = JSON.parse(saved);
-          setTxns(data.txns || []);
-          setFiles(data.files || []);
+    // Handle file upload
+    function handleFiles(files) {
+      var pdfs = [];
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].name.toLowerCase().indexOf('.pdf') !== -1) {
+          pdfs.push(files[i]);
         }
-      }, []);
+      }
+      if (!pdfs.length) return;
 
-      useEffect(() => {
-        if (txns.length || files.length) {
-          localStorage.setItem('bankData', JSON.stringify({ txns, files }));
-        }
-      }, [txns, files]);
+      document.getElementById('uploadContent').classList.add('hidden');
+      document.getElementById('uploadLoading').classList.remove('hidden');
 
-      const income = txns.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-      const expenses = Math.abs(txns.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0));
-      const net = income - expenses;
-
-      const catTotals = txns.filter(t => t.amount < 0).reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
-        return acc;
-      }, {});
-
-      const pieData = Object.entries(catTotals)
-        .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
-        .sort((a, b) => b.value - a.value);
-
-      const dailyBal = txns.reduce((acc, t) => {
-        const ex = acc.find(d => d.date === t.date);
-        if (ex) ex.balance = t.balance;
-        else acc.push({ date: t.date, balance: t.balance });
-        return acc;
-      }, []);
-
-      const handleFiles = useCallback(async (fileList) => {
-        const pdfs = Array.from(fileList).filter(f => f.name.endsWith('.pdf'));
-        if (!pdfs.length) return;
-        
-        setLoading(true);
-        try {
-          let all = [...txns];
-          const newFiles = [];
-          
-          for (const file of pdfs) {
-            if (files.includes(file.name)) continue;
-            const text = await extractPDF(file);
-            const parsed = parseStatement(text);
-            all = [...all, ...parsed];
-            newFiles.push(file.name);
-          }
-          
-          const seen = new Set();
-          all = all.filter(t => {
-            const key = `${t.date}-${t.description}-${t.amount}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
+      var processFile = function(index) {
+        if (index >= pdfs.length) {
+          // All done
+          var seen = {};
+          transactions = transactions.filter(function(t) {
+            var key = t.date + t.description + t.amount;
+            if (seen[key]) return false;
+            seen[key] = true;
             return true;
           });
-          
-          setTxns(all);
-          setFiles(prev => [...prev, ...newFiles]);
-        } catch (err) {
-          console.error(err);
+
+          transactions.sort(function(a, b) {
+            var partsA = a.date.split('.');
+            var partsB = b.date.split('.');
+            var dateA = new Date(2000 + parseInt(partsA[2]), parseInt(partsA[1]) - 1, parseInt(partsA[0]));
+            var dateB = new Date(2000 + parseInt(partsB[2]), parseInt(partsB[1]) - 1, parseInt(partsB[0]));
+            return dateA - dateB;
+          });
+
+          saveData();
+          render();
+          document.getElementById('uploadContent').classList.remove('hidden');
+          document.getElementById('uploadLoading').classList.add('hidden');
+          return;
         }
-        setLoading(false);
-      }, [txns, files]);
 
-      const drop = (e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); };
-      const clear = () => { setTxns([]); setFiles([]); localStorage.removeItem('bankData'); };
+        var file = pdfs[index];
+        if (uploadedFiles.indexOf(file.name) !== -1) {
+          processFile(index + 1);
+          return;
+        }
 
-      const filtered = filter ? txns.filter(t => t.category === filter) : txns;
-      const displayed = showAll ? filtered : filtered.slice(-10).reverse();
+        extractPDF(file).then(function(text) {
+          var parsed = parseStatement(text);
+          transactions = transactions.concat(parsed);
+          uploadedFiles.push(file.name);
+          processFile(index + 1);
+        }).catch(function(err) {
+          console.error('Error processing PDF:', err);
+          processFile(index + 1);
+        });
+      };
 
-      return (
-        <div style={{ minHeight: '100vh', background: '#0f172a', padding: '20px' }}>
-          <header style={{ maxWidth: '1200px', margin: '0 auto 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #34d399, #22d3ee)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>💳</div>
-              <div>
-                <h1 style={{ fontSize: '20px', fontWeight: 600 }}>Bank Analyzer</h1>
-                <p style={{ fontSize: '12px', color: '#64748b' }}>NLB Statement Dashboard</p>
-              </div>
-            </div>
-            {txns.length > 0 && (
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>{txns.length} transactions</span>
-                <button onClick={clear} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', fontSize: '13px' }}>Clear All</button>
-              </div>
-            )}
-          </header>
-
-          <main style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <div
-              onDrop={drop}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              style={{ marginBottom: '24px', padding: '40px', borderRadius: '16px', border: `2px dashed ${dragging ? '#34d399' : '#334155'}`, background: dragging ? 'rgba(52,211,153,0.1)' : 'rgba(30,41,59,0.5)', textAlign: 'center', cursor: 'pointer' }}
-            >
-              <label style={{ cursor: 'pointer' }}>
-                <input type="file" accept=".pdf" multiple onChange={(e) => handleFiles(e.target.files)} style={{ display: 'none' }} />
-                {loading ? (
-                  <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
-                ) : (
-                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>📄</div>
-                )}
-                <p style={{ fontSize: '16px', fontWeight: 500, marginBottom: '4px' }}>{loading ? 'Processing...' : 'Drop NLB bank statements here'}</p>
-                <p style={{ fontSize: '14px', color: '#64748b' }}>or click to browse</p>
-                {files.length > 0 && (
-                  <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {files.map((f, i) => (
-                      <span key={i} style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.2)', color: '#34d399', borderRadius: '20px', fontSize: '12px' }}>{f}</span>
-                    ))}
-                  </div>
-                )}
-              </label>
-            </div>
-
-            {txns.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
-                <div style={{ fontSize: '60px', marginBottom: '16px' }}>📊</div>
-                <h2 style={{ fontSize: '20px', marginBottom: '8px', color: '#e2e8f0' }}>No transactions yet</h2>
-                <p>Upload your NLB bank statement PDFs to see analytics</p>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', border: '1px solid rgba(16,185,129,0.2)' }}>
-                    <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '8px' }}>💰 Total Income</p>
-                    <p className="mono" style={{ fontSize: '24px', fontWeight: 700, color: '#34d399' }}>{fmt(income)}</p>
-                  </div>
-                  <div style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05))', border: '1px solid rgba(244,63,94,0.2)' }}>
-                    <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '8px' }}>💸 Total Expenses</p>
-                    <p className="mono" style={{ fontSize: '24px', fontWeight: 700, color: '#fb7185' }}>{fmt(expenses)}</p>
-                  </div>
-                  <div style={{ padding: '20px', borderRadius: '16px', background: `linear-gradient(135deg, rgba(${net >= 0 ? '34,211,238' : '251,191,36'},0.15), rgba(${net >= 0 ? '34,211,238' : '251,191,36'},0.05))`, border: `1px solid rgba(${net >= 0 ? '34,211,238' : '251,191,36'},0.2)` }}>
-                    <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '8px' }}>📈 Net Balance</p>
-                    <p className="mono" style={{ fontSize: '24px', fontWeight: 700, color: net >= 0 ? '#22d3ee' : '#fbbf24' }}>{net >= 0 ? '+' : ''}{fmt(net)}</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(30,41,59,0.5)', border: '1px solid #334155' }}>
-                    <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>📊 Spending by Category</h3>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" onClick={(d) => setFilter(filter === d.name ? null : d.name)}>
-                            {pieData.map((entry, i) => (
-                              <Cell key={i} fill={COLORS[entry.name] || '#94A3B8'} opacity={filter && filter !== entry.name ? 0.3 : 1} stroke={filter === entry.name ? '#fff' : 'none'} strokeWidth={2} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                            <div style={{ background: '#1e293b', padding: '8px 12px', borderRadius: '8px', border: '1px solid #334155' }}>
-                              <p style={{ fontWeight: 500 }}>{payload[0].payload.name}</p>
-                              <p style={{ color: '#94a3b8', fontSize: '14px' }}>{fmt(payload[0].value)}</p>
-                            </div>
-                          ) : null} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
-                      {pieData.slice(0, 6).map(c => (
-                        <button key={c.name} onClick={() => setFilter(filter === c.name ? null : c.name)} style={{ padding: '4px 10px', borderRadius: '20px', background: filter === c.name ? '#334155' : 'rgba(51,65,85,0.3)', border: 'none', color: '#e2e8f0', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: COLORS[c.name] }}></span>
-                          {c.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(30,41,59,0.5)', border: '1px solid #334155' }}>
-                    <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>📉 Balance Over Time</h3>
-                    <div style={{ height: '280px' }}>
-                      <ResponsiveContainer>
-                        <AreaChart data={dailyBal}>
-                          <defs>
-                            <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                          <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-                          <YAxis stroke="#64748b" fontSize={11} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                          <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-                            <div style={{ background: '#1e293b', padding: '8px 12px', borderRadius: '8px', border: '1px solid #334155' }}>
-                              <p style={{ color: '#94a3b8', fontSize: '12px' }}>{label}</p>
-                              <p style={{ fontWeight: 500 }}>{fmt(payload[0].value)}</p>
-                            </div>
-                          ) : null} />
-                          <Area type="monotone" dataKey="balance" stroke="#22d3ee" strokeWidth={2} fill="url(#balGrad)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(30,41,59,0.5)', border: '1px solid #334155', marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>📋 Category Breakdown</h3>
-                  {pieData.map(c => (
-                    <button key={c.name} onClick={() => setFilter(filter === c.name ? null : c.name)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', marginBottom: '8px', borderRadius: '10px', background: filter === c.name ? '#334155' : 'rgba(51,65,85,0.2)', border: 'none', color: '#e2e8f0', cursor: 'pointer', textAlign: 'left' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${COLORS[c.name]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                        {c.name === 'Groceries' ? '🛒' : c.name === 'Fuel' ? '⛽' : c.name === 'Restaurants' ? '🍔' : c.name === 'Travel' ? '✈️' : c.name === 'Shopping' ? '🛍️' : c.name === 'Transportation' ? '🚗' : '💳'}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: 500 }}>{c.name}</span>
-                          <span className="mono" style={{ color: '#94a3b8' }}>{fmt(c.value)}</span>
-                        </div>
-                        <div style={{ height: '4px', background: '#334155', borderRadius: '2px' }}>
-                          <div style={{ height: '100%', background: COLORS[c.name], borderRadius: '2px', width: `${(c.value / expenses) * 100}%` }}></div>
-                        </div>
-                      </div>
-                      <span style={{ color: '#64748b', fontSize: '13px', width: '45px', textAlign: 'right' }}>{((c.value / expenses) * 100).toFixed(1)}%</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ borderRadius: '16px', background: 'rgba(30,41,59,0.5)', border: '1px solid #334155', overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ fontSize: '16px' }}>
-                      📝 {filter ? `${filter} Transactions` : 'Recent Transactions'}
-                      {filter && <button onClick={() => setFilter(null)} style={{ marginLeft: '8px', padding: '2px 8px', background: '#334155', border: 'none', borderRadius: '12px', color: '#94a3b8', cursor: 'pointer', fontSize: '12px' }}>Clear</button>}
-                    </h3>
-                    <span style={{ color: '#64748b', fontSize: '13px' }}>{filtered.length} items</span>
-                  </div>
-                  {displayed.map((t, i) => (
-                    <div key={t.id} style={{ padding: '14px 20px', borderBottom: i < displayed.length - 1 ? '1px solid #1e293b' : 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${COLORS[t.category]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                        {t.category === 'Groceries' ? '🛒' : t.category === 'Fuel' ? '⛽' : t.category === 'Restaurants' ? '🍔' : t.category === 'Travel' ? '✈️' : t.category === 'Shopping' ? '🛍️' : t.category === 'Transportation' ? '🚗' : t.category === 'Income' ? '💰' : '💳'}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description}</p>
-                        <p style={{ fontSize: '12px', color: '#64748b' }}>{t.date} • <span style={{ color: COLORS[t.category] }}>{t.category}</span></p>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p className="mono" style={{ fontWeight: 600, color: t.amount > 0 ? '#34d399' : '#e2e8f0' }}>{t.amount > 0 ? '+' : ''}{fmt(t.amount)}</p>
-                        <p style={{ fontSize: '11px', color: '#64748b' }}>Bal: {fmt(t.balance)}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {filtered.length > 10 && (
-                    <button onClick={() => setShowAll(!showAll)} style={{ width: '100%', padding: '14px', background: 'transparent', border: 'none', borderTop: '1px solid #1e293b', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>
-                      {showAll ? '▲ Show less' : `▼ Show all ${filtered.length} transactions`}
-                    </button>
-                  )}
-                </div>
-
-                <footer style={{ textAlign: 'center', padding: '32px 0', color: '#64748b', fontSize: '13px' }}>
-                  Bank Analyzer • Data stored locally in your browser
-                </footer>
-              </>
-            )}
-          </main>
-        </div>
-      );
+      processFile(0);
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Save to localStorage
+    function saveData() {
+      localStorage.setItem('bankAnalyzer', JSON.stringify({ transactions: transactions, uploadedFiles: uploadedFiles }));
+    }
+
+    // Load from localStorage
+    function loadData() {
+      var saved = localStorage.getItem('bankAnalyzer');
+      if (saved) {
+        var data = JSON.parse(saved);
+        transactions = data.transactions || [];
+        uploadedFiles = data.uploadedFiles || [];
+      }
+    }
+
+    // Clear all data
+    function clearAllData() {
+      if (confirm('Are you sure you want to clear all data?')) {
+        transactions = [];
+        uploadedFiles = [];
+        localStorage.removeItem('bankAnalyzer');
+        render();
+      }
+    }
+
+    // Filter by category
+    function filterByCategory(cat) {
+      selectedCategory = selectedCategory === cat ? null : cat;
+      render();
+    }
+
+    // Clear filter
+    function clearFilter() {
+      selectedCategory = null;
+      render();
+    }
+
+    // Toggle show all transactions
+    function toggleShowAll() {
+      showAll = !showAll;
+      render();
+    }
+
+    // Render the app
+    function render() {
+      var fileTags = document.getElementById('fileTags');
+      var emptyState = document.getElementById('emptyState');
+      var dashboard = document.getElementById('dashboard');
+      var headerActions = document.getElementById('headerActions');
+
+      // File tags
+      fileTags.innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + f + '</span>'; }).join('');
+
+      if (transactions.length === 0) {
+        emptyState.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+        headerActions.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+      headerActions.classList.remove('hidden');
+
+      // Calculate totals
+      var income = 0, expenses = 0;
+      for (var i = 0; i < transactions.length; i++) {
+        if (transactions[i].amount > 0) income += transactions[i].amount;
+        else expenses += Math.abs(transactions[i].amount);
+      }
+      var net = income - expenses;
+
+      document.getElementById('totalIncome').textContent = formatCurrency(income);
+      document.getElementById('totalExpenses').textContent = formatCurrency(expenses);
+      document.getElementById('netBalance').textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
+      document.getElementById('netBalance').className = 'card-value ' + (net >= 0 ? 'blue' : 'red');
+      document.getElementById('txnCount').textContent = transactions.length + ' transactions';
+
+      // Category totals
+      var catTotals = {};
+      for (var i = 0; i < transactions.length; i++) {
+        var t = transactions[i];
+        if (t.amount < 0) {
+          catTotals[t.category] = (catTotals[t.category] || 0) + Math.abs(t.amount);
+        }
+      }
+
+      var sortedCats = [];
+      for (var cat in catTotals) {
+        sortedCats.push([cat, catTotals[cat]]);
+      }
+      sortedCats.sort(function(a, b) { return b[1] - a[1]; });
+
+      // Render category list
+      var categoryList = document.getElementById('categoryList');
+      var categoryHTML = '';
+      for (var i = 0; i < sortedCats.length; i++) {
+        var cat = sortedCats[i][0];
+        var amount = sortedCats[i][1];
+        var config = CATEGORIES[cat] || CATEGORIES.Other;
+        var pct = ((amount / expenses) * 100).toFixed(1);
+        var isActive = selectedCategory === cat;
+        categoryHTML += '<div class="category-item ' + (isActive ? 'active' : '') + '" onclick="filterByCategory(\'' + cat + '\')">' +
+          '<div class="category-icon" style="background:' + config.color + '20">' + config.icon + '</div>' +
+          '<div class="category-info">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+              '<span class="category-name">' + cat + '</span>' +
+              '<span class="category-amount">' + formatCurrency(amount) + '</span>' +
+            '</div>' +
+            '<div class="category-bar"><div class="category-bar-fill" style="width:' + pct + '%;background:' + config.color + '"></div></div>' +
+          '</div>' +
+          '<span class="category-percent">' + pct + '%</span>' +
+        '</div>';
+      }
+      categoryList.innerHTML = categoryHTML;
+
+      // Render charts
+      renderPieChart(sortedCats);
+      renderLineChart();
+
+      // Render transactions
+      renderTransactions(expenses);
+    }
+
+    // Render pie chart
+    function renderPieChart(sortedCats) {
+      var ctx = document.getElementById('pieChart').getContext('2d');
+      
+      if (pieChart) pieChart.destroy();
+
+      var labels = [];
+      var data = [];
+      var colors = [];
+      for (var i = 0; i < sortedCats.length; i++) {
+        labels.push(sortedCats[i][0]);
+        data.push(sortedCats[i][1]);
+        colors.push((CATEGORIES[sortedCats[i][0]] || CATEGORIES.Other).color);
+      }
+
+      pieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return ctx.label + ': ' + formatCurrency(ctx.raw); }
+              }
+            }
+          },
+          onClick: function(e, elements) {
+            if (elements.length > 0) {
+              var cat = sortedCats[elements[0].index][0];
+              filterByCategory(cat);
+            }
+          }
+        }
+      });
+    }
+
+    // Render line chart
+    function renderLineChart() {
+      var ctx = document.getElementById('lineChart').getContext('2d');
+      
+      // Get daily balances
+      var dailyBal = [];
+      var balByDate = {};
+      for (var i = 0; i < transactions.length; i++) {
+        balByDate[transactions[i].date] = transactions[i].balance;
+      }
+      for (var date in balByDate) {
+        dailyBal.push({ date: date, balance: balByDate[date] });
+      }
+
+      if (lineChart) lineChart.destroy();
+
+      lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dailyBal.map(function(d) { return d.date; }),
+          datasets: [{
+            data: dailyBal.map(function(d) { return d.balance; }),
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return formatCurrency(ctx.raw); }
+              }
+            }
+          },
+          scales: {
+            x: { 
+              grid: { color: '#334155' },
+              ticks: { color: '#64748b', maxTicksLimit: 6 }
+            },
+            y: { 
+              grid: { color: '#334155' },
+              ticks: { 
+                color: '#64748b',
+                callback: function(v) { return (v / 1000).toFixed(0) + 'k'; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Render transactions list
+    function renderTransactions() {
+      var filtered = selectedCategory 
+        ? transactions.filter(function(t) { return t.category === selectedCategory; })
+        : transactions;
+      
+      var displayed = showAll ? filtered : filtered.slice(-10).reverse();
+      
+      document.getElementById('txnTitle').textContent = selectedCategory 
+        ? selectedCategory + ' Transactions' 
+        : 'Recent Transactions';
+      
+      if (selectedCategory) {
+        document.getElementById('clearFilter').classList.remove('hidden');
+      } else {
+        document.getElementById('clearFilter').classList.add('hidden');
+      }
+      document.getElementById('txnListCount').textContent = filtered.length + ' items';
+
+      var list = document.getElementById('transactionList');
+      var html = '';
+      for (var i = 0; i < displayed.length; i++) {
+        var t = displayed[i];
+        var config = CATEGORIES[t.category] || CATEGORIES.Other;
+        var isPositive = t.amount > 0;
+        html += '<div class="transaction">' +
+          '<div class="transaction-icon" style="background:' + config.color + '20">' + config.icon + '</div>' +
+          '<div class="transaction-details">' +
+            '<div class="transaction-desc">' + t.description + '</div>' +
+            '<div class="transaction-meta">' + t.date + 
+              '<span class="transaction-cat" style="background:' + config.color + '20;color:' + config.color + '">' + t.category + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="transaction-amount">' +
+            '<div class="transaction-amount-value ' + (isPositive ? 'positive' : '') + '">' + 
+              (isPositive ? '+' : '') + formatCurrency(t.amount) + 
+            '</div>' +
+            '<div class="transaction-balance">Bal: ' + formatCurrency(t.balance) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      list.innerHTML = html;
+
+      var showMoreBtn = document.getElementById('showMoreBtn');
+      if (filtered.length > 10) {
+        showMoreBtn.classList.remove('hidden');
+        showMoreBtn.textContent = showAll ? '▲ Show less' : '▼ Show all ' + filtered.length + ' transactions';
+      } else {
+        showMoreBtn.classList.add('hidden');
+      }
+    }
+
+    // Event listeners
+    document.getElementById('fileInput').addEventListener('change', function(e) { 
+      handleFiles(e.target.files); 
+    });
+
+    var uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', function(e) { 
+      e.preventDefault(); 
+      uploadZone.classList.add('dragging'); 
+    });
+    uploadZone.addEventListener('dragleave', function() { 
+      uploadZone.classList.remove('dragging'); 
+    });
+    uploadZone.addEventListener('drop', function(e) { 
+      e.preventDefault(); 
+      uploadZone.classList.remove('dragging');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Initialize
+    loadData();
+    render();
   </script>
 </body>
 </html>
