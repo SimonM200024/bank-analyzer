@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Analyzer - NLB Statement Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', -apple-system, sans-serif; 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+      color: #f8fafc; 
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    /* Header */
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { 
+      width: 44px; height: 44px; 
+      background: linear-gradient(135deg, #34d399, #22d3ee); 
+      border-radius: 12px; 
+      display: flex; align-items: center; justify-content: center; 
+      font-size: 22px; 
+    }
+    .logo h1 { font-size: 20px; font-weight: 600; }
+    .logo p { font-size: 12px; color: #64748b; }
+    
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      background: rgba(30, 41, 59, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.dragging {
+      border-color: #34d399;
+      background: rgba(52, 211, 153, 0.1);
+    }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 48px; margin-bottom: 16px; }
+    .upload-zone h3 { font-size: 18px; margin-bottom: 8px; }
+    .upload-zone p { color: #64748b; font-size: 14px; }
+    
+    /* File tags */
+    .file-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .file-tag { 
+      padding: 6px 12px; 
+      background: rgba(52, 211, 153, 0.2); 
+      color: #34d399; 
+      border-radius: 20px; 
+      font-size: 13px; 
+    }
+    
+    /* Cards Grid */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card {
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card-income { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.2); }
+    .card-expense { background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.2); }
+    .card-balance { background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.05)); border-color: rgba(34, 211, 238, 0.2); }
+    .card-label { color: #94a3b8; font-size: 14px; margin-bottom: 8px; }
+    .card-value { font-size: 28px; font-weight: 700; font-family: monospace; }
+    .card-value.green { color: #34d399; }
+    .card-value.red { color: #fb7185; }
+    .card-value.blue { color: #22d3ee; }
+    
+    /* Charts */
+    .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .chart-box {
+      padding: 24px;
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+    }
+    .chart-box h3 { font-size: 16px; margin-bottom: 20px; }
+    .chart-container { position: relative; height: 280px; }
+    
+    /* Category list */
+    .category-list { margin-top: 16px; }
+    .category-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 8px;
+      background: rgba(51, 65, 85, 0.3);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .category-item:hover { background: rgba(51, 65, 85, 0.5); }
+    .category-item.active { background: #334155; }
+    .category-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .category-info { flex: 1; }
+    .category-name { font-weight: 500; margin-bottom: 4px; }
+    .category-bar { height: 4px; background: #334155; border-radius: 2px; }
+    .category-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+    .category-amount { font-family: monospace; color: #94a3b8; }
+    .category-percent { color: #64748b; font-size: 13px; width: 50px; text-align: right; }
+    
+    /* Transactions */
+    .transactions {
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .transactions-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .transactions-header h3 { font-size: 16px; }
+    .transactions-count { color: #64748b; font-size: 13px; }
+    .transaction {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid #1e293b;
+      transition: background 0.2s;
+    }
+    .transaction:hover { background: rgba(51, 65, 85, 0.3); }
+    .transaction:last-child { border-bottom: none; }
+    .transaction-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .transaction-details { flex: 1; min-width: 0; }
+    .transaction-desc { 
+      font-weight: 500; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .transaction-meta { font-size: 12px; color: #64748b; }
+    .transaction-cat { 
+      padding: 2px 8px; 
+      border-radius: 10px; 
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .transaction-amount { text-align: right; }
+    .transaction-amount-value { font-weight: 600; font-family: monospace; }
+    .transaction-amount-value.positive { color: #34d399; }
+    .transaction-balance { font-size: 11px; color: #64748b; margin-top: 2px; }
+    
+    .show-more {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: none;
+      border-top: 1px solid #1e293b;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .show-more:hover { background: rgba(51, 65, 85, 0.3); color: #e2e8f0; }
+    
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-clear {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .btn-clear:hover { background: rgba(239, 68, 68, 0.2); }
+    .btn-filter {
+      padding: 4px 12px;
+      background: #334155;
+      color: #94a3b8;
+      border-radius: 20px;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #64748b;
+    }
+    .empty-state-icon { font-size: 64px; margin-bottom: 20px; }
+    .empty-state h2 { color: #e2e8f0; margin-bottom: 8px; }
+    
+    /* Footer */
+    .footer { text-align: center; padding: 32px 0; color: #64748b; font-size: 13px; }
+    
+    /* Spinner */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #334155;
+      border-top-color: #22d3ee;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Hide class */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">💳</div>
+        <div>
+          <h1>Bank Analyzer</h1>
+          <p>NLB Statement Dashboard</p>
+        </div>
+      </div>
+      <div id="headerActions" class="hidden">
+        <span id="txnCount" style="color: #94a3b8; font-size: 14px; margin-right: 12px;"></span>
+        <button class="btn btn-clear" onclick="clearAllData()">🗑️ Clear All</button>
+      </div>
+    </header>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".pdf" multiple>
+      <div id="uploadContent">
+        <div class="upload-icon">📄</div>
+        <h3>Drop NLB bank statements here</h3>
+        <p>or click to browse • PDF files only</p>
+      </div>
+      <div id="uploadLoading" class="hidden">
+        <div class="spinner"></div>
+        <h3>Processing...</h3>
+      </div>
+      <div class="file-tags" id="fileTags"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <h2>No transactions yet</h2>
+      <p>Upload your NLB bank statement PDFs to see analytics</p>
+    </div>
+
+    <!-- Dashboard (hidden by default) -->
+    <div id="dashboard" class="hidden">
+      <!-- Summary Cards -->
+      <div class="cards">
+        <div class="card card-income">
+          <div class="card-label">💰 Total Income</div>
+          <div class="card-value green" id="totalIncome">€0.00</div>
+        </div>
+        <div class="card card-expense">
+          <div class="card-label">💸 Total Expenses</div>
+          <div class="card-value red" id="totalExpenses">€0.00</div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-label">📈 Net Balance</div>
+          <div class="card-value blue" id="netBalance">€0.00</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts">
+        <div class="chart-box">
+          <h3>📊 Spending by Category</h3>
+          <div class="chart-container">
+            <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-box">
+          <h3>📉 Balance Over Time</h3>
+          <div class="chart-container">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="chart-box">
+        <h3>📋 Category Breakdown</h3>
+        <div class="category-list" id="categoryList"></div>
+      </div>
+
+      <!-- Transactions -->
+      <div class="transactions">
+        <div class="transactions-header">
+          <h3>📝 <span id="txnTitle">Recent Transactions</span>
+            <button class="btn btn-filter hidden" id="clearFilter" onclick="clearFilter()">Clear filter ×</button>
+          </h3>
+          <span class="transactions-count" id="txnListCount"></span>
+        </div>
+        <div id="transactionList"></div>
+        <button class="show-more hidden" id="showMoreBtn" onclick="toggleShowAll()">Show all transactions</button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        Bank Analyzer • Your data is stored locally in your browser
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Initialize PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // App State
+    var transactions = [];
+    var uploadedFiles = [];
+    var selectedCategory = null;
+    var showAll = false;
+    var pieChart = null;
+    var lineChart = null;
+
+    // Category configuration
+    var CATEGORIES = {
+      'Groceries': { keywords: ['LIDL', 'HOFER', 'SPAR', 'INTERSPAR', 'MERCATOR', 'SUPERMARKET'], color: '#10B981', icon: '🛒' },
+      'Fuel': { keywords: ['MOL', 'PETROL', 'OMV', 'ESSO', 'SHELL'], color: '#F59E0B', icon: '⛽' },
+      'Restaurants': { keywords: ['MCDONALDS', 'PUB', 'BAR', 'RESTAVRACIJA', 'PIVNICA', 'GOSTILNA', 'NEBO'], color: '#EC4899', icon: '🍔' },
+      'Travel': { keywords: ['ASFINAG', 'DARS', 'EVINJETA', 'BOOKING', 'HOTEL', 'TERME', 'AVTOCAMP', 'RAILWAYS'], color: '#3B82F6', icon: '✈️' },
+      'Shopping': { keywords: ['ZARA', 'AMAZON', 'AMZN', 'ALDI', 'H&M'], color: '#8B5CF6', icon: '🛍️' },
+      'Entertainment': { keywords: ['BOLDER SCENA', 'OLAII', 'VSTOPNICE', 'KINO'], color: '#06B6D4', icon: '🎬' },
+      'Transportation': { keywords: ['CAR PAYMENT', 'AUTOHAUS', 'TEHNICNI PREGLEDI'], color: '#EF4444', icon: '🚗' },
+      'Transfers': { keywords: ['REVOLUT', 'QUASI CASH'], color: '#6366F1', icon: '💸' },
+      'Services': { keywords: ['POSTA', 'PROVIZIJA', 'TELEKOM'], color: '#64748B', icon: '📋' },
+      'Income': { keywords: ['ADRIAL', 'REDNO DELO'], color: '#22C55E', icon: '💰' },
+      'Other': { keywords: [], color: '#94A3B8', icon: '💳' }
+    };
+
+    // Format currency
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+    }
+
+    // Categorize transaction
+    function categorize(description) {
+      var upper = description.toUpperCase();
+      for (var cat in CATEGORIES) {
+        var keywords = CATEGORIES[cat].keywords;
+        for (var i = 0; i < keywords.length; i++) {
+          if (upper.indexOf(keywords[i]) !== -1) return cat;
+        }
+      }
+      return 'Other';
+    }
+
+    // Parse NLB statement text
+    function parseStatement(text) {
+      var txns = [];
+      var lines = text.split(/\n/);
+      var pattern = /(\d{2}\.\d{2}\.\d{2})\s+(.+?)\s+([+-]?\d{1,3}(?:[\.,]\d{3})*[\.,]\d{2})\s+(\d{1,3}(?:[\.,]\d{3})*[\.,]\d{2})/;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line || /STANJE|SKUPNI|Datum|LETNA|EUR\s*-|NLB PAKET|Obvestilo|Varnostna/i.test(line)) continue;
+
+        var match = line.match(pattern);
+        if (match) {
+          var date = match[1];
+          var desc = match[2];
+          var amtStr = match[3];
+          var balStr = match[4];
+          
+          var amt = parseFloat(amtStr.replace(/\./g, '').replace(',', '.'));
+          var bal = parseFloat(balStr.replace(/\./g, '').replace(',', '.'));
+
+          // Determine sign
+          if (amtStr.charAt(0) !== '+' && amtStr.charAt(0) !== '-') {
+            var isIncome = /ADRIAL|REDNO DELO/i.test(desc);
+            if (!isIncome) amt = -Math.abs(amt);
+          }
+
+          txns.push({
+            id: date + '-' + i + '-' + Math.random().toString(36).substr(2, 5),
+            date: date,
+            description: desc.trim(),
+            amount: amt,
+            balance: bal,
+            category: categorize(desc)
+          });
+        }
+      }
+      return txns;
+    }
+
+    // Extract text from PDF
+    function extractPDF(file) {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var typedArray = new Uint8Array(e.target.result);
+          pdfjsLib.getDocument({ data: typedArray }).promise.then(function(pdf) {
+            var text = '';
+            var promises = [];
+            for (var i = 1; i <= pdf.numPages; i++) {
+              promises.push(
+                pdf.getPage(i).then(function(page) {
+                  return page.getTextContent().then(function(content) {
+                    return content.items.map(function(item) { return item.str; }).join(' ');
+                  });
+                })
+              );
+            }
+            Promise.all(promises).then(function(pages) {
+              resolve(pages.join('\n'));
+            });
+          }).catch(reject);
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Handle file upload
+    function handleFiles(files) {
+      var pdfs = [];
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].name.toLowerCase().indexOf('.pdf') !== -1) {
+          pdfs.push(files[i]);
+        }
+      }
+      if (!pdfs.length) return;
+
+      document.getElementById('uploadContent').classList.add('hidden');
+      document.getElementById('uploadLoading').classList.remove('hidden');
+
+      var processFile = function(index) {
+        if (index >= pdfs.length) {
+          // All done
+          var seen = {};
+          transactions = transactions.filter(function(t) {
+            var key = t.date + t.description + t.amount;
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+          });
+
+          transactions.sort(function(a, b) {
+            var partsA = a.date.split('.');
+            var partsB = b.date.split('.');
+            var dateA = new Date(2000 + parseInt(partsA[2]), parseInt(partsA[1]) - 1, parseInt(partsA[0]));
+            var dateB = new Date(2000 + parseInt(partsB[2]), parseInt(partsB[1]) - 1, parseInt(partsB[0]));
+            return dateA - dateB;
+          });
+
+          saveData();
+          render();
+          document.getElementById('uploadContent').classList.remove('hidden');
+          document.getElementById('uploadLoading').classList.add('hidden');
+          return;
+        }
+
+        var file = pdfs[index];
+        if (uploadedFiles.indexOf(file.name) !== -1) {
+          processFile(index + 1);
+          return;
+        }
+
+        extractPDF(file).then(function(text) {
+          var parsed = parseStatement(text);
+          transactions = transactions.concat(parsed);
+          uploadedFiles.push(file.name);
+          processFile(index + 1);
+        }).catch(function(err) {
+          console.error('Error processing PDF:', err);
+          processFile(index + 1);
+        });
+      };
+
+      processFile(0);
+    }
+
+    // Save to localStorage
+    function saveData() {
+      localStorage.setItem('bankAnalyzer', JSON.stringify({ transactions: transactions, uploadedFiles: uploadedFiles }));
+    }
+
+    // Load from localStorage
+    function loadData() {
+      var saved = localStorage.getItem('bankAnalyzer');
+      if (saved) {
+        var data = JSON.parse(saved);
+        transactions = data.transactions || [];
+        uploadedFiles = data.uploadedFiles || [];
+      }
+    }
+
+    // Clear all data
+    function clearAllData() {
+      if (confirm('Are you sure you want to clear all data?')) {
+        transactions = [];
+        uploadedFiles = [];
+        localStorage.removeItem('bankAnalyzer');
+        render();
+      }
+    }
+
+    // Filter by category
+    function filterByCategory(cat) {
+      selectedCategory = selectedCategory === cat ? null : cat;
+      render();
+    }
+
+    // Clear filter
+    function clearFilter() {
+      selectedCategory = null;
+      render();
+    }
+
+    // Toggle show all transactions
+    function toggleShowAll() {
+      showAll = !showAll;
+      render();
+    }
+
+    // Render the app
+    function render() {
+      var fileTags = document.getElementById('fileTags');
+      var emptyState = document.getElementById('emptyState');
+      var dashboard = document.getElementById('dashboard');
+      var headerActions = document.getElementById('headerActions');
+
+      // File tags
+      fileTags.innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + f + '</span>'; }).join('');
+
+      if (transactions.length === 0) {
+        emptyState.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+        headerActions.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+      headerActions.classList.remove('hidden');
+
+      // Calculate totals
+      var income = 0, expenses = 0;
+      for (var i = 0; i < transactions.length; i++) {
+        if (transactions[i].amount > 0) income += transactions[i].amount;
+        else expenses += Math.abs(transactions[i].amount);
+      }
+      var net = income - expenses;
+
+      document.getElementById('totalIncome').textContent = formatCurrency(income);
+      document.getElementById('totalExpenses').textContent = formatCurrency(expenses);
+      document.getElementById('netBalance').textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
+      document.getElementById('netBalance').className = 'card-value ' + (net >= 0 ? 'blue' : 'red');
+      document.getElementById('txnCount').textContent = transactions.length + ' transactions';
+
+      // Category totals
+      var catTotals = {};
+      for (var i = 0; i < transactions.length; i++) {
+        var t = transactions[i];
+        if (t.amount < 0) {
+          catTotals[t.category] = (catTotals[t.category] || 0) + Math.abs(t.amount);
+        }
+      }
+
+      var sortedCats = [];
+      for (var cat in catTotals) {
+        sortedCats.push([cat, catTotals[cat]]);
+      }
+      sortedCats.sort(function(a, b) { return b[1] - a[1]; });
+
+      // Render category list
+      var categoryList = document.getElementById('categoryList');
+      var categoryHTML = '';
+      for (var i = 0; i < sortedCats.length; i++) {
+        var cat = sortedCats[i][0];
+        var amount = sortedCats[i][1];
+        var config = CATEGORIES[cat] || CATEGORIES.Other;
+        var pct = ((amount / expenses) * 100).toFixed(1);
+        var isActive = selectedCategory === cat;
+        categoryHTML += '<div class="category-item ' + (isActive ? 'active' : '') + '" onclick="filterByCategory(\'' + cat + '\')">' +
+          '<div class="category-icon" style="background:' + config.color + '20">' + config.icon + '</div>' +
+          '<div class="category-info">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+              '<span class="category-name">' + cat + '</span>' +
+              '<span class="category-amount">' + formatCurrency(amount) + '</span>' +
+            '</div>' +
+            '<div class="category-bar"><div class="category-bar-fill" style="width:' + pct + '%;background:' + config.color + '"></div></div>' +
+          '</div>' +
+          '<span class="category-percent">' + pct + '%</span>' +
+        '</div>';
+      }
+      categoryList.innerHTML = categoryHTML;
+
+      // Render charts
+      renderPieChart(sortedCats);
+      renderLineChart();
+
+      // Render transactions
+      renderTransactions(expenses);
+    }
+
+    // Render pie chart
+    function renderPieChart(sortedCats) {
+      var ctx = document.getElementById('pieChart').getContext('2d');
+      
+      if (pieChart) pieChart.destroy();
+
+      var labels = [];
+      var data = [];
+      var colors = [];
+      for (var i = 0; i < sortedCats.length; i++) {
+        labels.push(sortedCats[i][0]);
+        data.push(sortedCats[i][1]);
+        colors.push((CATEGORIES[sortedCats[i][0]] || CATEGORIES.Other).color);
+      }
+
+      pieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return ctx.label + ': ' + formatCurrency(ctx.raw); }
+              }
+            }
+          },
+          onClick: function(e, elements) {
+            if (elements.length > 0) {
+              var cat = sortedCats[elements[0].index][0];
+              filterByCategory(cat);
+            }
+          }
+        }
+      });
+    }
+
+    // Render line chart
+    function renderLineChart() {
+      var ctx = document.getElementById('lineChart').getContext('2d');
+      
+      // Get daily balances
+      var dailyBal = [];
+      var balByDate = {};
+      for (var i = 0; i < transactions.length; i++) {
+        balByDate[transactions[i].date] = transactions[i].balance;
+      }
+      for (var date in balByDate) {
+        dailyBal.push({ date: date, balance: balByDate[date] });
+      }
+
+      if (lineChart) lineChart.destroy();
+
+      lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dailyBal.map(function(d) { return d.date; }),
+          datasets: [{
+            data: dailyBal.map(function(d) { return d.balance; }),
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return formatCurrency(ctx.raw); }
+              }
+            }
+          },
+          scales: {
+            x: { 
+              grid: { color: '#334155' },
+              ticks: { color: '#64748b', maxTicksLimit: 6 }
+            },
+            y: { 
+              grid: { color: '#334155' },
+              ticks: { 
+                color: '#64748b',
+                callback: function(v) { return (v / 1000).toFixed(0) + 'k'; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Render transactions list
+    function renderTransactions() {
+      var filtered = selectedCategory 
+        ? transactions.filter(function(t) { return t.category === selectedCategory; })
+        : transactions;
+      
+      var displayed = showAll ? filtered : filtered.slice(-10).reverse();
+      
+      document.getElementById('txnTitle').textContent = selectedCategory 
+        ? selectedCategory + ' Transactions' 
+        : 'Recent Transactions';
+      
+      if (selectedCategory) {
+        document.getElementById('clearFilter').classList.remove('hidden');
+      } else {
+        document.getElementById('clearFilter').classList.add('hidden');
+      }
+      document.getElementById('txnListCount').textContent = filtered.length + ' items';
+
+      var list = document.getElementById('transactionList');
+      var html = '';
+      for (var i = 0; i < displayed.length; i++) {
+        var t = displayed[i];
+        var config = CATEGORIES[t.category] || CATEGORIES.Other;
+        var isPositive = t.amount > 0;
+        html += '<div class="transaction">' +
+          '<div class="transaction-icon" style="background:' + config.color + '20">' + config.icon + '</div>' +
+          '<div class="transaction-details">' +
+            '<div class="transaction-desc">' + t.description + '</div>' +
+            '<div class="transaction-meta">' + t.date + 
+              '<span class="transaction-cat" style="background:' + config.color + '20;color:' + config.color + '">' + t.category + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="transaction-amount">' +
+            '<div class="transaction-amount-value ' + (isPositive ? 'positive' : '') + '">' + 
+              (isPositive ? '+' : '') + formatCurrency(t.amount) + 
+            '</div>' +
+            '<div class="transaction-balance">Bal: ' + formatCurrency(t.balance) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      list.innerHTML = html;
+
+      var showMoreBtn = document.getElementById('showMoreBtn');
+      if (filtered.length > 10) {
+        showMoreBtn.classList.remove('hidden');
+        showMoreBtn.textContent = showAll ? '▲ Show less' : '▼ Show all ' + filtered.length + ' transactions';
+      } else {
+        showMoreBtn.classList.add('hidden');
+      }
+    }
+
+    // Event listeners
+    document.getElementById('fileInput').addEventListener('change', function(e) { 
+      handleFiles(e.target.files); 
+    });
+
+    var uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', function(e) { 
+      e.preventDefault(); 
+      uploadZone.classList.add('dragging'); 
+    });
+    uploadZone.addEventListener('dragleave', function() { 
+      uploadZone.classList.remove('dragging'); 
+    });
+    uploadZone.addEventListener('drop', function(e) { 
+      e.preventDefault(); 
+      uploadZone.classList.remove('dragging');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Initialize
+    loadData();
+    render();
+  </script>
+</body>
+</html>
