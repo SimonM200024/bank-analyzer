@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Analyzer - NLB Statement Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc; min-height: 100vh; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #34d399, #22d3ee); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .logo h1 { font-size: 20px; font-weight: 600; }
+    .logo p { font-size: 12px; color: #64748b; }
+    .upload-zone { border: 2px dashed #334155; border-radius: 16px; padding: 48px 24px; text-align: center; margin-bottom: 24px; background: rgba(30, 41, 59, 0.5); cursor: pointer; transition: all 0.3s; }
+    .upload-zone:hover, .upload-zone.dragging { border-color: #34d399; background: rgba(52, 211, 153, 0.1); }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 48px; margin-bottom: 16px; }
+    .upload-zone h3 { font-size: 18px; margin-bottom: 8px; }
+    .upload-zone p { color: #64748b; font-size: 14px; }
+    .file-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .file-tag { padding: 6px 12px; background: rgba(52, 211, 153, 0.2); color: #34d399; border-radius: 20px; font-size: 13px; }
+    
+    /* Date Filter Styles */
+    .filters { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-label { font-size: 13px; color: #94a3b8; }
+    .filter-select, .filter-input { 
+      padding: 8px 12px; 
+      background: rgba(30, 41, 59, 0.8); 
+      border: 1px solid #334155; 
+      border-radius: 8px; 
+      color: #f8fafc; 
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .filter-select:focus, .filter-input:focus { outline: none; border-color: #22d3ee; }
+    .month-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .month-pill {
+      padding: 6px 12px;
+      background: rgba(51, 65, 85, 0.5);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      color: #94a3b8;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .month-pill:hover { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; }
+    .month-pill.active { background: #22d3ee; color: #0f172a; border-color: #22d3ee; }
+    .filter-btn {
+      padding: 8px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #f87171;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .filter-btn:hover { background: rgba(239, 68, 68, 0.2); }
+    
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+    .card-income { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.2); }
+    .card-expense { background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.2); }
+    .card-balance { background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.05)); border-color: rgba(34, 211, 238, 0.2); }
+    .card-count { background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05)); border-color: rgba(139, 92, 246, 0.2); }
+    .card-label { color: #94a3b8; font-size: 13px; margin-bottom: 6px; }
+    .card-value { font-size: 24px; font-weight: 700; font-family: monospace; }
+    .card-value.green { color: #34d399; }
+    .card-value.red { color: #fb7185; }
+    .card-value.blue { color: #22d3ee; }
+    .card-value.purple { color: #a78bfa; }
+    .card-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+    
+    .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .chart-box { padding: 24px; border-radius: 16px; background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; }
+    .chart-box h3 { font-size: 16px; margin-bottom: 20px; }
+    .chart-container { position: relative; height: 280px; }
+    .chart-container.tall { height: 350px; }
+    
+    .category-list { margin-top: 16px; }
+    .category-item { display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 8px; background: rgba(51, 65, 85, 0.3); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+    .category-item:hover { background: rgba(51, 65, 85, 0.5); }
+    .category-item.active { background: #334155; }
+    .category-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .category-info { flex: 1; min-width: 0; }
+    .category-name { font-weight: 500; margin-bottom: 4px; }
+    .category-bar { height: 4px; background: #334155; border-radius: 2px; }
+    .category-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+    .category-amount { font-family: monospace; color: #94a3b8; font-size: 14px; }
+    .category-percent { color: #64748b; font-size: 13px; width: 50px; text-align: right; flex-shrink: 0; }
+    
+    .transactions { border-radius: 16px; background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; overflow: hidden; margin-bottom: 24px; }
+    .transactions-header { padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .transactions-header h3 { font-size: 16px; }
+    .transactions-count { color: #64748b; font-size: 13px; }
+    .transaction { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #1e293b; transition: background 0.2s; }
+    .transaction:hover { background: rgba(51, 65, 85, 0.3); }
+    .transaction:last-child { border-bottom: none; }
+    .transaction-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .transaction-details { flex: 1; min-width: 0; }
+    .transaction-desc { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .transaction-meta { font-size: 12px; color: #64748b; }
+    .transaction-cat { padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px; }
+    .transaction-amount { text-align: right; flex-shrink: 0; }
+    .transaction-amount-value { font-weight: 600; font-family: monospace; }
+    .transaction-amount-value.positive { color: #34d399; }
+    .transaction-balance { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .show-more { width: 100%; padding: 14px; background: transparent; border: none; border-top: 1px solid #1e293b; color: #94a3b8; cursor: pointer; font-size: 14px; }
+    .show-more:hover { background: rgba(51, 65, 85, 0.3); color: #e2e8f0; }
+    
+    .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+    .btn-clear { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+    .btn-clear:hover { background: rgba(239, 68, 68, 0.2); }
+    .btn-filter { padding: 4px 12px; background: #334155; color: #94a3b8; border-radius: 20px; margin-left: 8px; font-size: 12px; border: none; cursor: pointer; }
+    
+    .empty-state { text-align: center; padding: 80px 20px; color: #64748b; }
+    .empty-state-icon { font-size: 64px; margin-bottom: 20px; }
+    .empty-state h2 { color: #e2e8f0; margin-bottom: 8px; }
+    .footer { text-align: center; padding: 32px 0; color: #64748b; font-size: 13px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+    .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 16px; border-radius: 12px; margin-bottom: 24px; }
+    
+    /* Search */
+    .search-box { 
+      flex: 1; 
+      min-width: 200px;
+      max-width: 300px;
+      padding: 8px 12px; 
+      background: rgba(30, 41, 59, 0.8); 
+      border: 1px solid #334155; 
+      border-radius: 8px; 
+      color: #f8fafc; 
+      font-size: 14px;
+    }
+    .search-box:focus { outline: none; border-color: #22d3ee; }
+    .search-box::placeholder { color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">💳</div>
+        <div>
+          <h1>Bank Analyzer</h1>
+          <p>NLB Statement Dashboard</p>
+        </div>
+      </div>
+      <div id="headerActions" class="hidden">
+        <span id="txnCount" style="color: #94a3b8; font-size: 14px; margin-right: 12px;"></span>
+        <button class="btn btn-clear" onclick="clearAllData()">🗑️ Clear All</button>
+      </div>
+    </header>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".pdf" multiple>
+      <div id="uploadContent">
+        <div class="upload-icon">📄</div>
+        <h3>Drop NLB bank statements here</h3>
+        <p>or click to browse • PDF files only • Multiple files supported</p>
+      </div>
+      <div id="uploadLoading" class="hidden">
+        <div class="spinner"></div>
+        <h3>Processing PDFs...</h3>
+        <p id="loadingStatus" style="color: #64748b; margin-top: 8px;"></p>
+      </div>
+      <div class="file-tags" id="fileTags"></div>
+    </div>
+
+    <div id="errorBox" class="error-box hidden"></div>
+
+    <div id="emptyState" class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <h2>No transactions yet</h2>
+      <p>Upload your NLB bank statement PDFs to see analytics</p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <!-- Date Filters -->
+      <div class="filters" id="filters">
+        <div class="filter-group">
+          <span class="filter-label">📅 Year:</span>
+          <select class="filter-select" id="yearFilter" onchange="applyFilters()">
+            <option value="all">All Years</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Month:</span>
+          <div class="month-pills" id="monthPills"></div>
+        </div>
+        <div class="filter-group" style="margin-left: auto;">
+          <button class="filter-btn" onclick="resetFilters()">Reset Filters</button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="cards">
+        <div class="card card-income">
+          <div class="card-label">💰 Income</div>
+          <div class="card-value green" id="totalIncome">€0.00</div>
+          <div class="card-sub" id="incomeCount">0 transactions</div>
+        </div>
+        <div class="card card-expense">
+          <div class="card-label">💸 Expenses</div>
+          <div class="card-value red" id="totalExpenses">€0.00</div>
+          <div class="card-sub" id="expenseCount">0 transactions</div>
+        </div>
+        <div class="card card-balance">
+          <div class="card-label">📈 Net</div>
+          <div class="card-value blue" id="netBalance">€0.00</div>
+          <div class="card-sub" id="avgDaily">Avg/day: €0</div>
+        </div>
+        <div class="card card-count">
+          <div class="card-label">📊 Transactions</div>
+          <div class="card-value purple" id="txnTotal">0</div>
+          <div class="card-sub" id="dateRange">-</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts">
+        <div class="chart-box">
+          <h3>📊 Spending by Category</h3>
+          <div class="chart-container"><canvas id="pieChart"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>📉 Balance Over Time</h3>
+          <div class="chart-container"><canvas id="lineChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Monthly Comparison -->
+      <div class="chart-box" style="margin-bottom: 24px;">
+        <h3>📆 Monthly Income vs Expenses</h3>
+        <div class="chart-container tall"><canvas id="monthlyChart"></canvas></div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="chart-box" style="margin-bottom: 24px;">
+        <h3>📋 Category Breakdown</h3>
+        <div class="category-list" id="categoryList"></div>
+      </div>
+
+      <!-- Transactions -->
+      <div class="transactions">
+        <div class="transactions-header">
+          <h3>📝 <span id="txnTitle">Transactions</span>
+            <button class="btn-filter hidden" id="clearCatFilter" onclick="clearCategoryFilter()">Clear ×</button>
+          </h3>
+          <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search transactions..." oninput="applyFilters()">
+          <span class="transactions-count" id="txnListCount"></span>
+        </div>
+        <div id="transactionList"></div>
+        <button class="show-more hidden" id="showMoreBtn" onclick="toggleShowAll()">Show all</button>
+      </div>
+
+      <footer class="footer">Bank Analyzer • Data stored locally in your browser</footer>
+    </div>
+  </div>
+
+  <script type="module">
+    const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+
+    window.clearAllData = clearAllData;
+    window.clearCategoryFilter = clearCategoryFilter;
+    window.toggleShowAll = toggleShowAll;
+    window.filterByCategory = filterByCategory;
+    window.applyFilters = applyFilters;
+    window.resetFilters = resetFilters;
+    window.selectMonth = selectMonth;
+
+    let allTransactions = [];
+    let filteredTransactions = [];
+    let uploadedFiles = [];
+    let selectedCategory = null;
+    let selectedYear = 'all';
+    let selectedMonth = 'all';
+    let searchQuery = '';
+    let showAll = false;
+    let pieChart = null;
+    let lineChart = null;
+    let monthlyChart = null;
+
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const CATEGORIES = {
+      'Groceries': { keywords: ['LIDL', 'HOFER', 'SPAR', 'INTERSPAR', 'MERCATOR', 'SUPERMARKET', 'TUS', 'EUROSPIN'], color: '#10B981', icon: '🛒' },
+      'Fuel': { keywords: ['MOL ', 'MOL-', 'PETROL', 'OMV', 'ESSO', 'SHELL'], color: '#F59E0B', icon: '⛽' },
+      'Restaurants': { keywords: ['MCDONALDS', 'PUB', 'BAR ', 'RESTAVRACIJA', 'PIVNICA', 'GOSTILNA', 'NEBO', 'TROPIC', 'PIZZA', 'BURGER', 'DONER', 'KEBAB'], color: '#EC4899', icon: '🍔' },
+      'Travel': { keywords: ['ASFINAG', 'DARS', 'EVINJETA', 'BOOKING', 'HOTEL', 'TERME', 'AVTOCAMP', 'RAILWAYS', 'BANKOMAT DVIG', 'AIRBNB', 'HOSTEL', 'RENT A CAR'], color: '#3B82F6', icon: '✈️' },
+      'Shopping': { keywords: ['ZARA', 'AMAZON', 'AMZN', 'ALDI', 'H&M', 'ABOUTYOU', 'ABOUT YOU', 'MERKUR', 'DM -', 'DM-', 'IKEA', 'DECATHLON', 'ALIEXPRESS', 'SHEIN'], color: '#8B5CF6', icon: '🛍️' },
+      'Entertainment': { keywords: ['BOLDER SCENA', 'OLAII', 'VSTOPNICE', 'KINO', 'NETFLIX', 'SPOTIFY', 'YOUTUBE', 'STEAM', 'PLAYSTATION', 'XBOX'], color: '#06B6D4', icon: '🎬' },
+      'Transportation': { keywords: ['CAR PAYMENT', 'AUTOHAUS', 'TEHNICNI PREGLEDI', 'PSTOP', 'PARK', 'TAXI', 'UBER', 'BOLT', 'BUS', 'TRAIN'], color: '#EF4444', icon: '🚗' },
+      'Transfers': { keywords: ['REVOLUT', 'QUASI CASH', 'FLIK', 'PAYPAL', 'WISE'], color: '#6366F1', icon: '💸' },
+      'Education': { keywords: ['UL EF', 'FAKULT', 'UNIV', 'STUDENT', 'KNJIG'], color: '#F472B6', icon: '🎓' },
+      'Health': { keywords: ['LEKARNA', 'APOTEKA', 'ZDRAVSTV', 'DOCTOR', 'CLINIC', 'HOSPITAL'], color: '#84CC16', icon: '🏥' },
+      'Services': { keywords: ['POSTA', 'PROVIZIJA', 'TELEKOM', 'NYX', 'TELEMACH', 'A1 ', 'ELEKTRO', 'KOMUNALA'], color: '#64748B', icon: '📋' },
+      'Income': { keywords: ['ADRIAL', 'REDNO DELO', 'PLACA', 'SICOD', 'RETURN', 'VRACILO', 'STIPENDIJA'], color: '#22C55E', icon: '💰' },
+      'Personal': { keywords: ['ROK ', 'MILAN V', 'ANDRAZ', 'NEJC P', 'MIHA M', 'ANJUSA', 'SIMON', 'FLIK PLA'], color: '#14B8A6', icon: '👤' },
+      'Other': { keywords: [], color: '#94A3B8', icon: '💳' }
+    };
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+    }
+
+    function categorize(description) {
+      const upper = description.toUpperCase();
+      for (const [cat, config] of Object.entries(CATEGORIES)) {
+        if (cat === 'Other') continue;
+        if (config.keywords.some(k => upper.includes(k.toUpperCase()))) return cat;
+      }
+      return 'Other';
+    }
+
+    function parseDate(dateStr) {
+      const [d, m, y] = dateStr.split('.');
+      return new Date(2000 + parseInt(y), parseInt(m) - 1, parseInt(d));
+    }
+
+    function parseStatement(text) {
+      const txns = [];
+      const cleanText = text.replace(/\s+/g, ' ');
+      const datePattern = /(\d{2}\.\d{2}\.\d{2})/g;
+      const dates = [];
+      let match;
+      
+      while ((match = datePattern.exec(cleanText)) !== null) {
+        dates.push({ date: match[1], index: match.index });
+      }
+      
+      for (let i = 0; i < dates.length; i++) {
+        const startIdx = dates[i].index;
+        const endIdx = (i + 1 < dates.length) ? dates[i + 1].index : cleanText.length;
+        const segment = cleanText.substring(startIdx, endIdx).trim();
+        
+        if (/STANJE|SKUPNI|Datum izpiska|predhodnega|LETNA OBRESTNA|EUR\s*-\s*EVRO|NLB PAKET|Obvestilo|Varnostna/i.test(segment)) {
+          continue;
+        }
+        
+        const date = dates[i].date;
+        const amountPattern = /([+-]?\d{1,3}(?:\.\d{3})*,\d{2})/g;
+        const amounts = [];
+        let amtMatch;
+        
+        while ((amtMatch = amountPattern.exec(segment)) !== null) {
+          amounts.push(amtMatch[1]);
+        }
+        
+        if (amounts.length >= 2) {
+          const amtStr = amounts[amounts.length - 2];
+          const balStr = amounts[amounts.length - 1];
+          
+          let amt = parseFloat(amtStr.replace(/\./g, '').replace(',', '.'));
+          const bal = parseFloat(balStr.replace(/\./g, '').replace(',', '.'));
+          
+          const firstAmtIdx = segment.indexOf(amounts[0]);
+          let desc = segment.substring(date.length, firstAmtIdx).trim();
+          desc = desc.replace(/^\s*[\.,]\s*/, '').trim();
+          
+          if (!desc || desc.length < 2) continue;
+          
+          const isIncome = amtStr.startsWith('+') || /ADRIAL|REDNO DELO|RETURN|SICOD|VRACILO/i.test(desc);
+          
+          if (!amtStr.startsWith('+') && !amtStr.startsWith('-') && !isIncome) {
+            amt = -Math.abs(amt);
+          }
+          
+          let category = categorize(desc);
+          if (amt > 0 && category === 'Other') category = 'Income';
+          
+          const parsedDate = parseDate(date);
+          
+          txns.push({
+            id: `${date}-${txns.length}-${Math.random().toString(36).substr(2, 5)}`,
+            date,
+            parsedDate,
+            year: parsedDate.getFullYear(),
+            month: parsedDate.getMonth(),
+            description: desc,
+            amount: amt,
+            balance: bal,
+            category
+          });
+        }
+      }
+      
+      return txns;
+    }
+
+    async function extractPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        
+        let lastY = null;
+        content.items.forEach(item => {
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            fullText += '\n';
+          }
+          fullText += item.str + ' ';
+          lastY = item.transform[5];
+        });
+        fullText += '\n';
+      }
+      
+      return fullText;
+    }
+
+    async function handleFiles(files) {
+      const pdfs = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      if (!pdfs.length) return;
+
+      document.getElementById('uploadContent').classList.add('hidden');
+      document.getElementById('uploadLoading').classList.remove('hidden');
+      document.getElementById('errorBox').classList.add('hidden');
+
+      let totalParsed = 0;
+      
+      try {
+        for (let idx = 0; idx < pdfs.length; idx++) {
+          const file = pdfs[idx];
+          if (uploadedFiles.includes(file.name)) continue;
+          
+          document.getElementById('loadingStatus').textContent = `Processing ${idx + 1}/${pdfs.length}: ${file.name}`;
+          
+          const text = await extractPDF(file);
+          const parsed = parseStatement(text);
+          
+          totalParsed += parsed.length;
+          allTransactions = [...allTransactions, ...parsed];
+          uploadedFiles.push(file.name);
+        }
+
+        // Remove duplicates
+        const seen = new Set();
+        allTransactions = allTransactions.filter(t => {
+          const key = `${t.date}-${t.description}-${t.amount}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        // Sort by date
+        allTransactions.sort((a, b) => a.parsedDate - b.parsedDate);
+
+        if (totalParsed === 0) {
+          document.getElementById('errorBox').textContent = 'No transactions found in the uploaded files.';
+          document.getElementById('errorBox').classList.remove('hidden');
+        }
+
+        saveData();
+        applyFilters();
+      } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('errorBox').textContent = `Error: ${err.message}`;
+        document.getElementById('errorBox').classList.remove('hidden');
+      }
+
+      document.getElementById('uploadContent').classList.remove('hidden');
+      document.getElementById('uploadLoading').classList.add('hidden');
+    }
+
+    function saveData() {
+      localStorage.setItem('bankAnalyzer', JSON.stringify({ 
+        transactions: allTransactions.map(t => ({...t, parsedDate: t.parsedDate.toISOString()})), 
+        uploadedFiles 
+      }));
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem('bankAnalyzer');
+      if (saved) {
+        const data = JSON.parse(saved);
+        allTransactions = (data.transactions || []).map(t => ({
+          ...t,
+          parsedDate: new Date(t.parsedDate)
+        }));
+        uploadedFiles = data.uploadedFiles || [];
+      }
+    }
+
+    function clearAllData() {
+      if (confirm('Clear all data?')) {
+        allTransactions = [];
+        filteredTransactions = [];
+        uploadedFiles = [];
+        localStorage.removeItem('bankAnalyzer');
+        render();
+      }
+    }
+
+    function filterByCategory(cat) {
+      selectedCategory = selectedCategory === cat ? null : cat;
+      applyFilters();
+    }
+
+    function clearCategoryFilter() {
+      selectedCategory = null;
+      applyFilters();
+    }
+
+    function selectMonth(month) {
+      selectedMonth = selectedMonth === month ? 'all' : month;
+      applyFilters();
+    }
+
+    function resetFilters() {
+      selectedYear = 'all';
+      selectedMonth = 'all';
+      selectedCategory = null;
+      searchQuery = '';
+      document.getElementById('yearFilter').value = 'all';
+      document.getElementById('searchBox').value = '';
+      applyFilters();
+    }
+
+    function applyFilters() {
+      selectedYear = document.getElementById('yearFilter').value;
+      searchQuery = document.getElementById('searchBox').value.toLowerCase();
+      
+      filteredTransactions = allTransactions.filter(t => {
+        if (selectedYear !== 'all' && t.year !== parseInt(selectedYear)) return false;
+        if (selectedMonth !== 'all' && t.month !== parseInt(selectedMonth)) return false;
+        if (selectedCategory && t.category !== selectedCategory) return false;
+        if (searchQuery && !t.description.toLowerCase().includes(searchQuery)) return false;
+        return true;
+      });
+      
+      showAll = false;
+      render();
+    }
+
+    function toggleShowAll() {
+      showAll = !showAll;
+      renderTransactions();
+    }
+
+    function render() {
+      document.getElementById('fileTags').innerHTML = uploadedFiles.map(f => `<span class="file-tag">📄 ${f}</span>`).join('');
+
+      if (allTransactions.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('headerActions').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('headerActions').classList.remove('hidden');
+
+      // Populate year filter
+      const years = [...new Set(allTransactions.map(t => t.year))].sort();
+      const yearFilter = document.getElementById('yearFilter');
+      yearFilter.innerHTML = '<option value="all">All Years</option>' + 
+        years.map(y => `<option value="${y}" ${selectedYear == y ? 'selected' : ''}>${y}</option>`).join('');
+
+      // Populate month pills
+      const monthPills = document.getElementById('monthPills');
+      monthPills.innerHTML = '<span class="month-pill ' + (selectedMonth === 'all' ? 'active' : '') + '" onclick="selectMonth(\'all\')">All</span>' +
+        MONTHS.map((m, i) => `<span class="month-pill ${selectedMonth === i ? 'active' : ''}" onclick="selectMonth(${i})">${m}</span>`).join('');
+
+      // Calculate stats for filtered transactions
+      const income = filteredTransactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+      const expenses = Math.abs(filteredTransactions.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0));
+      const net = income - expenses;
+      const incomeCount = filteredTransactions.filter(t => t.amount > 0).length;
+      const expenseCount = filteredTransactions.filter(t => t.amount < 0).length;
+
+      // Date range
+      let dateRange = '-';
+      if (filteredTransactions.length > 0) {
+        const first = filteredTransactions[0].date;
+        const last = filteredTransactions[filteredTransactions.length - 1].date;
+        dateRange = `${first} - ${last}`;
+        
+        // Calculate days for avg
+        const days = Math.max(1, Math.ceil((filteredTransactions[filteredTransactions.length - 1].parsedDate - filteredTransactions[0].parsedDate) / (1000 * 60 * 60 * 24)));
+        document.getElementById('avgDaily').textContent = `Avg/day: ${formatCurrency(expenses / days)}`;
+      }
+
+      document.getElementById('totalIncome').textContent = formatCurrency(income);
+      document.getElementById('totalExpenses').textContent = formatCurrency(expenses);
+      document.getElementById('netBalance').textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
+      document.getElementById('netBalance').className = 'card-value ' + (net >= 0 ? 'blue' : 'red');
+      document.getElementById('incomeCount').textContent = `${incomeCount} transactions`;
+      document.getElementById('expenseCount').textContent = `${expenseCount} transactions`;
+      document.getElementById('txnTotal').textContent = filteredTransactions.length;
+      document.getElementById('dateRange').textContent = dateRange;
+      document.getElementById('txnCount').textContent = `${allTransactions.length} total`;
+
+      // Category totals
+      const catTotals = {};
+      filteredTransactions.filter(t => t.amount < 0).forEach(t => {
+        catTotals[t.category] = (catTotals[t.category] || 0) + Math.abs(t.amount);
+      });
+
+      const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+
+      // Render categories
+      document.getElementById('categoryList').innerHTML = sortedCats.map(([cat, amount]) => {
+        const config = CATEGORIES[cat] || CATEGORIES.Other;
+        const pct = expenses > 0 ? ((amount / expenses) * 100).toFixed(1) : '0';
+        return `
+          <div class="category-item ${selectedCategory === cat ? 'active' : ''}" onclick="filterByCategory('${cat}')">
+            <div class="category-icon" style="background:${config.color}20">${config.icon}</div>
+            <div class="category-info">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span class="category-name">${cat}</span>
+                <span class="category-amount">${formatCurrency(amount)}</span>
+              </div>
+              <div class="category-bar"><div class="category-bar-fill" style="width:${pct}%;background:${config.color}"></div></div>
+            </div>
+            <span class="category-percent">${pct}%</span>
+          </div>
+        `;
+      }).join('');
+
+      renderCharts(sortedCats, expenses);
+      renderMonthlyChart();
+      renderTransactions();
+    }
+
+    function renderCharts(sortedCats, expenses) {
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      if (pieChart) pieChart.destroy();
+      
+      pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: sortedCats.map(([c]) => c),
+          datasets: [{
+            data: sortedCats.map(([, v]) => v),
+            backgroundColor: sortedCats.map(([c]) => (CATEGORIES[c] || CATEGORIES.Other).color),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.raw)}` } }
+          },
+          onClick: (e, elements) => {
+            if (elements.length) filterByCategory(sortedCats[elements[0].index][0]);
+          }
+        }
+      });
+
+      // Line chart
+      const lineCtx = document.getElementById('lineChart').getContext('2d');
+      if (lineChart) lineChart.destroy();
+
+      const dailyBal = [];
+      const balByDate = {};
+      filteredTransactions.forEach(t => balByDate[t.date] = t.balance);
+      Object.entries(balByDate).forEach(([date, balance]) => dailyBal.push({ date, balance }));
+
+      lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: dailyBal.map(d => d.date),
+          datasets: [{
+            data: dailyBal.map(d => d.balance),
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#334155' }, ticks: { color: '#64748b', maxTicksLimit: 8 } },
+            y: { grid: { color: '#334155' }, ticks: { color: '#64748b', callback: v => (v/1000).toFixed(0) + 'k' } }
+          }
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+      if (monthlyChart) monthlyChart.destroy();
+
+      // Group by month
+      const monthlyData = {};
+      filteredTransactions.forEach(t => {
+        const key = `${t.year}-${String(t.month + 1).padStart(2, '0')}`;
+        if (!monthlyData[key]) monthlyData[key] = { income: 0, expenses: 0 };
+        if (t.amount > 0) monthlyData[key].income += t.amount;
+        else monthlyData[key].expenses += Math.abs(t.amount);
+      });
+
+      const sortedMonths = Object.keys(monthlyData).sort();
+      const labels = sortedMonths.map(k => {
+        const [y, m] = k.split('-');
+        return `${MONTHS[parseInt(m) - 1]} ${y}`;
+      });
+
+      monthlyChart = new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Income',
+              data: sortedMonths.map(k => monthlyData[k].income),
+              backgroundColor: '#22C55E'
+            },
+            {
+              label: 'Expenses',
+              data: sortedMonths.map(k => monthlyData[k].expenses),
+              backgroundColor: '#fb7185'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              display: true, 
+              position: 'top',
+              labels: { color: '#94a3b8', usePointStyle: true }
+            },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}` } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b' } },
+            y: { grid: { color: '#334155' }, ticks: { color: '#64748b', callback: v => (v/1000).toFixed(0) + 'k' } }
+          }
+        }
+      });
+    }
+
+    function renderTransactions() {
+      const displayed = showAll ? filteredTransactions.slice().reverse() : filteredTransactions.slice(-15).reverse();
+
+      document.getElementById('txnTitle').textContent = selectedCategory ? `${selectedCategory} Transactions` : 'Transactions';
+      document.getElementById('clearCatFilter').classList.toggle('hidden', !selectedCategory);
+      document.getElementById('txnListCount').textContent = `${filteredTransactions.length} items`;
+
+      document.getElementById('transactionList').innerHTML = displayed.map(t => {
+        const config = CATEGORIES[t.category] || CATEGORIES.Other;
+        const isPositive = t.amount > 0;
+        return `
+          <div class="transaction">
+            <div class="transaction-icon" style="background:${config.color}20">${config.icon}</div>
+            <div class="transaction-details">
+              <div class="transaction-desc">${t.description}</div>
+              <div class="transaction-meta">${t.date}<span class="transaction-cat" style="background:${config.color}20;color:${config.color}">${t.category}</span></div>
+            </div>
+            <div class="transaction-amount">
+              <div class="transaction-amount-value ${isPositive ? 'positive' : ''}">${isPositive ? '+' : ''}${formatCurrency(t.amount)}</div>
+              <div class="transaction-balance">Bal: ${formatCurrency(t.balance)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const showBtn = document.getElementById('showMoreBtn');
+      if (filteredTransactions.length > 15) {
+        showBtn.classList.remove('hidden');
+        showBtn.textContent = showAll ? '▲ Show less' : `▼ Show all ${filteredTransactions.length}`;
+      } else {
+        showBtn.classList.add('hidden');
+      }
+    }
+
+    // Event listeners
+    document.getElementById('uploadZone').addEventListener('click', () => document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+    
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragging'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
+    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
+
+    // Initialize
+    loadData();
+    applyFilters();
+    console.log('Bank Analyzer v2 loaded!');
+  </script>
+</body>
+</html>
