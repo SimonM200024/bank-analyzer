@@ -1,0 +1,13 @@
+Izpisek transakcijskega računa;SI56 0000 0000 0000 000
+;
+Datum knjiženja;Datum valute;Naziv prejemnika/plačnika;Namen plačila;Referenca;Breme;Dobro;Valuta
+02.09.2026;02.09.2026;Willow Trading d.o.o.;Plačilo računa INV-1001;SI00 1001;;1.250,00;EUR
+03.09.2026;03.09.2026;Harbour Supply d.o.o.;Nabava material september;SI12 2026-09;480,50;;EUR
+05.09.2026;05.09.2026;NLB d.d.;Nadomestilo za vodenje računa;;12,90;;EUR
+08.09.2026;08.09.2026;Northwind Foods;Payment for invoice 1002 partial;;;500,00;EUR
+10.09.2026;10.09.2026;Petrol d.d.;Gorivo kartica;;86,40;;EUR
+15.09.2026;15.09.2026;FURS;DDV avgust;SI19 12345;2.140,00;;EUR
+18.09.2026;18.09.2026;Unknown Sender;Nakazilo;;;75,00;EUR
+20.09.2026;20.09.2026;Google Ireland Ltd;Google Workspace subscription;;;;EUR
+21.09.2026;21.09.2026;Google Ireland Ltd;Google Workspace subscription;;46,00;;EUR
+22.09.2026;22.09.2026;Stripe Payments;Payout USD;;;120,00;USD

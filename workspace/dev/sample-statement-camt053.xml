@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>STMT-2026-09</MsgId><CreDtTm>2026-09-30T18:00:00</CreDtTm></GrpHdr>
+    <Stmt>
+      <Id>2026-09</Id>
+      <Acct><Id><IBAN>SI56000000000000000</IBAN></Id><Ccy>EUR</Ccy></Acct>
+      <Ntry>
+        <Amt Ccy="EUR">1250.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts>
+        <BookgDt><Dt>2026-09-02</Dt></BookgDt><ValDt><Dt>2026-09-02</Dt></ValDt>
+        <AcctSvcrRef>A1</AcctSvcrRef>
+        <NtryDtls><TxDtls>
+          <Refs><EndToEndId>NOTPROVIDED</EndToEndId></Refs>
+          <RltdPties><Dbtr><Nm>Willow Trading d.o.o.</Nm></Dbtr></RltdPties>
+          <RmtInf><Ustrd>Placilo racuna INV-1001</Ustrd><Strd><CdtrRefInf><Ref>SI00 1001</Ref></CdtrRefInf></Strd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">12.90</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts>
+        <BookgDt><Dt>2026-09-05</Dt></BookgDt>
+        <AddtlNtryInf>Nadomestilo za vodenje racuna</AddtlNtryInf>
+        <NtryDtls><TxDtls><RltdPties><Cdtr><Nm>NLB d.d.</Nm></Cdtr></RltdPties></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">300.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts>
+        <BookgDt><Dt>2026-09-12</Dt></BookgDt>
+        <NtryDtls><TxDtls>
+          <RltdPties><Cdtr><Pty><Nm>Office Space Najemnine d.o.o.</Nm></Pty></Cdtr></RltdPties>
+          <RmtInf><Ustrd>Najemnina september &amp; obratovalni stroski</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>
