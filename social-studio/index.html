@@ -108,6 +108,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .ex-list button{width:100%;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--raised);text-align:left;min-width:0}
 .ex-list button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ex-list button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stack-eg{display:grid;gap:6px}
+.eg{display:block;width:100%;text-align:left;padding:7px 10px;border:1px dashed var(--line);border-radius:6px;background:transparent;font-size:12.5px;color:var(--ink2);line-height:1.35}
+.eg:hover{border-color:var(--ink2);color:var(--ink)}
+.opt{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.opt input{accent-color:var(--accent);margin:0}
 .ex-edit{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--raised)}
 
 .stage-wrap{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--bg);background-image:radial-gradient(color-mix(in srgb,var(--ink) 14%,transparent) 1px,transparent 1.2px);background-size:18px 18px}
@@ -182,6 +187,21 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </section>
 
     <aside class="rail" aria-label="Controls">
+      <section class="sec" id="sec-ai" hidden>
+        <h2>Describe your ad</h2>
+        <label class="fld"><span>What do you want to promote?</span>
+          <textarea id="ai-prompt" rows="3" maxlength="600" placeholder="Instagram story for my barbershop: 20% off haircuts this Friday, dark and bold"></textarea>
+        </label>
+        <div class="stack-eg" id="ai-examples"></div>
+        <label class="opt" id="ai-brand-row" for="ai-brand" hidden><input type="checkbox" id="ai-brand" checked>Use my saved brand colors and fonts</label>
+        <div class="btns">
+          <button class="btn primary" id="ai-go" type="button">Create 3 designs</button>
+          <button class="btn ghost" id="ai-stop" type="button" hidden>Stop</button>
+        </div>
+        <p class="hint" id="ai-status" role="status"></p>
+        <div class="tpl-grid" id="ai-vars" hidden></div>
+      </section>
+
       <section class="sec">
         <h2>Size</h2>
         <div class="fmt-grid" id="fmt-grid"></div>
@@ -203,6 +223,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <label class="fld"><span>Button</span><input id="f-cta" maxlength="28" autocomplete="off"></label>
         </div>
         <label class="fld"><span>Handle or website</span><input id="f-handle" maxlength="40" autocomplete="off"></label>
+      </section>
+
+      <section class="sec">
+        <h2>Caption</h2>
+        <label class="fld"><span>Post text and hashtags</span><textarea id="f-caption" rows="4" maxlength="1200" placeholder="Write the text that goes with the post, or let Describe your ad draft it."></textarea></label>
+        <div class="btns"><button class="btn" id="copy-caption" type="button">Copy caption</button></div>
       </section>
 
       <section class="sec">
@@ -354,7 +380,7 @@ const EMOJI = ['🔥', '⭐', '🎉', '❤️', '👉', '✅', '🛒', '📍', '
 const KEY = 'postbench.v1', BKEY = 'postbench.brand.v1';
 const fresh = () => ({
   format: 'ig-post', template: 'bold', theme: 'ember',
-  fields: { ...TEMPLATES_SAMPLE.bold }, touched: {},
+  fields: { ...TEMPLATES_SAMPLE.bold }, touched: {}, caption: '',
   colors: pickColors(THEMES[0]), bgMode: 'gradient', angle: 145, fontPair: 0,
   overlay: 55, photo: null, logo: null, logoPos: 'tr', logoSize: 16, extras: [],
 });
@@ -584,6 +610,16 @@ const TEMPLATES = {
     return L;
   } },
 };
+const LAYOUT_HELP = {
+  "bold": "Promotions and sales. badge = a discount or short hook shown in a starburst, such as '20% OFF' or 'SALE'. The headline is set in capitals.",
+  "clean": "Announcements, new products or services. badge = a tiny label above the headline, such as 'New'.",
+  "photo": "Full-bleed photo with text over it. Only for food, products, places or people. The owner adds the photo afterwards.",
+  "spot": "Product spotlight: a photo card with text beside or below it. badge = a short label on the photo, such as 'New'.",
+  "quote": "Customer testimonial. headline = the quote itself, sub = who said it, badge = stars. Use ONLY when the request contains a real quote.",
+  "event": "Events, openings, workshops. badge = the date or time shown in a pill. Use ONLY a date the request gives.",
+  "stat": "One big number. badge = the number, such as '4.9' or '10 years'. Use ONLY a figure the request gives.",
+  "frame": "Elegant invitation-style frame. badge = a small label such as 'Est. 2014'. Suits premium, calm or formal brands."
+};
 const ORDER = Object.keys(TEMPLATES);
 
 /* ---------- layout context ---------- */
@@ -760,6 +796,7 @@ function renderThumbs() {
     const x = cvs.getContext('2d'); x.setTransform(s * q, 0, 0, s * q, 0, 0);
     draw(x, { ...st, template: b.dataset.id, extras: [] }, fmt, null);
   });
+  renderVarThumbs();
 }
 function saveSoon() {
   clearTimeout(saveT);
@@ -802,6 +839,8 @@ function syncUi() {
   $('#dims').textContent = `${fmt.w} × ${fmt.h} px · ${fmt.ratio}`;
   $('#tpl-hint').hidden = !(TEMPLATES[st.template].usesPhoto && !st.photo);
   for (const k of ['headline', 'sub', 'badge', 'cta', 'handle']) { const el = $('#f-' + k); if (document.activeElement !== el) el.value = st.fields[k] || ''; }
+  if (document.activeElement !== $('#f-caption')) $('#f-caption').value = st.caption || '';
+  $('#ai-brand-row').hidden = !brand;
   for (const [k, id] of [['bg1', 'c-bg1'], ['bg2', 'c-bg2'], ['text', 'c-text'], ['accent', 'c-accent']]) $('#' + id).value = st.colors[k];
   $('#c-bg2').disabled = st.bgMode === 'solid'; $('#angle-fld').hidden = st.bgMode === 'solid';
   $('#r-angle').value = st.angle; $('#o-angle').textContent = st.angle + '°';
@@ -889,7 +928,7 @@ function bind() {
   rb.addEventListener('click', () => {
     if (!rb.classList.contains('confirm')) { rb.classList.add('confirm'); rb.textContent = 'Click again to clear'; rt = setTimeout(() => { rb.classList.remove('confirm'); rb.textContent = 'Start over'; }, 3000); return; }
     clearTimeout(rt); rb.classList.remove('confirm'); rb.textContent = 'Start over';
-    st = fresh(); selId = null; IMG.photo = IMG.logo = null; IMG.ex = {}; commit(); fitStage();
+    st = fresh(); selId = null; IMG.photo = IMG.logo = null; IMG.ex = {}; vars = []; varSel = -1; renderVars(); commit(); fitStage();
   });
 
   /* dragging stickers and text on the preview */
@@ -999,6 +1038,156 @@ function makeZip(files) {
   return new Blob([...parts, ...cd, end.buffer], { type: 'application/zip' });
 }
 
+/* ---------- describe your ad (runs on the viewer's own Claude, so it only appears where that exists) ---------- */
+let askClaude = null, aiCtl = null, vars = [], varSel = -1;
+const samplePromise = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+const AI_EXAMPLES = [
+  'Instagram story for my barbershop: 20% off haircuts this Friday, dark and bold',
+  'Facebook post announcing the new vegan lunch menu at Green Fork cafe, fresh and friendly',
+  'LinkedIn banner for my accounting firm, calm and trustworthy',
+];
+const HEX = /^#[0-9a-f]{6}$/i;
+const cleanLine = (v, max) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
+const cleanText = (v, max) => typeof v === 'string' ? v.replace(/\r/g, '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, max) : '';
+function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+function safeColors(c) {
+  const out = { bg1: c.bg1.toLowerCase(), bg2: c.bg2.toLowerCase(), text: c.text.toLowerCase(), accent: c.accent.toLowerCase() };
+  const worst = t => Math.min(contrast(t, out.bg1), contrast(t, out.bg2));
+  if (worst(out.text) < 4.5) out.text = worst('#ffffff') >= worst('#14110f') ? '#ffffff' : '#14110f';
+  if (worst(out.accent) < 2.2) out.accent = out.text;
+  return out;
+}
+/* Claude's reply is untrusted data: only whitelisted ids, hex colors and trimmed strings get through */
+function cleanDesign(o) {
+  if (!o || typeof o !== 'object' || !Object.prototype.hasOwnProperty.call(TEMPLATES, o.template)) return null;
+  const f = o.fields && typeof o.fields === 'object' ? o.fields : {};
+  const fields = { badge: cleanLine(f.badge, 16), headline: cleanLine(f.headline, 60), sub: cleanLine(f.sub, 120), cta: cleanLine(f.cta, 24), handle: cleanLine(f.handle, 40) };
+  if (!fields.headline) return null;
+  const col = o.colors && typeof o.colors === 'object' && ['bg1', 'bg2', 'text', 'accent'].every(k => HEX.test(o.colors[k] || '')) ? safeColors(o.colors) : null;
+  const theme = THEMES.some(t => t.id === o.theme) ? o.theme : 'ember';
+  return { template: o.template, colors: col, theme: col ? null : theme,
+    fontPair: Number.isInteger(o.fontPair) && o.fontPair >= 0 && o.fontPair < PAIRS.length ? o.fontPair : 0,
+    format: FORMATS.some(x => x.id === o.format) ? o.format : null, fields, caption: cleanText(o.caption, 600) };
+}
+function resolveDesign(d) {
+  const useBrand = !!(brand && $('#ai-brand').checked);
+  const colors = useBrand ? { ...brand.colors } : d.colors || pickColors(THEMES.find(t => t.id === d.theme) || THEMES[0]);
+  return { template: d.template, colors, fontPair: useBrand && brand.fontPair != null ? brand.fontPair : d.fontPair,
+    fields: { ...d.fields, handle: d.fields.handle || (brand && brand.handle) || '' }, theme: useBrand ? 'brand' : d.colors ? 'custom' : d.theme };
+}
+function applyDesign(i) {
+  const d = vars[i]; if (!d) return;
+  const r = resolveDesign(d), oldText = st.colors.text;
+  st.template = r.template; st.colors = r.colors; st.theme = r.theme; st.bgMode = 'gradient'; st.fontPair = r.fontPair;
+  st.fields = r.fields; st.touched = { badge: true, headline: true, sub: true, cta: true, handle: true }; st.caption = d.caption || '';
+  st.extras.forEach(e => { if (e.kind === 'text' && e.color === oldText) e.color = st.colors.text; });
+  if (d.format) st.format = d.format;
+  varSel = i; commit(); fitStage(); markVars();
+}
+function renderVars() {
+  const box = $('#ai-vars'); box.hidden = !vars.length;
+  box.innerHTML = vars.map((d, i) => `<button class="tpl" type="button" data-i="${i}" aria-pressed="${i === varSel}"><div class="thumb"><canvas aria-hidden="true"></canvas></div><span>${i + 1}. ${TEMPLATES[d.template].name}</span></button>`).join('');
+  renderVarThumbs();
+}
+function markVars() { $$('#ai-vars .tpl').forEach(b => b.setAttribute('aria-pressed', +b.dataset.i === varSel)); }
+function renderVarThumbs() {
+  const fmt = fmtOf(st.format), s = Math.min(150 / fmt.w, 108 / fmt.h);
+  $$('#ai-vars .tpl').forEach(b => {
+    const d = vars[+b.dataset.i]; if (!d) return;
+    const r = resolveDesign(d), cvs = b.querySelector('canvas'), q = 2;
+    cvs.width = Math.round(fmt.w * s * q); cvs.height = Math.round(fmt.h * s * q); cvs.style.width = fmt.w * s + 'px'; cvs.style.height = fmt.h * s + 'px';
+    const x = cvs.getContext('2d'); x.setTransform(s * q, 0, 0, s * q, 0, 0);
+    const tmp = { ...st, template: r.template, colors: r.colors, fontPair: r.fontPair, fields: r.fields, bgMode: 'gradient', extras: [] };
+    draw(x, tmp, fmt, null); loadFonts(tmp);
+  });
+}
+function buildAiPrompt(request) {
+  const fmt = fmtOf(st.format);
+  return `You are the art director inside Postbench, a tool that builds social media ads for small businesses from a fixed set of layouts. Turn the request below into 3 different design options.
+
+REQUEST (written by the business owner):
+"""
+${request}
+"""
+
+PLATFORM
+Set "format" to one of ${FORMATS.map(f => f.id).join(', ')} ONLY if the request names a platform or shape (Instagram post = ig-post, Instagram portrait = ig-portrait, story, reel or TikTok = story, Facebook post = fb-post, Facebook cover = fb-cover, X or Twitter = x-post, LinkedIn banner = li-banner, YouTube thumbnail = yt-thumb, Pinterest = pin). Otherwise set it to null. The current size is ${fmt.id}.
+
+LAYOUTS (field "template", use the id)
+${ORDER.map(id => `- ${id}: ${LAYOUT_HELP[id]}`).join('\n')}
+
+COLOR THEMES (field "theme", use the id)
+${THEMES.map(t => `- ${t.id}: background ${t.bg1} to ${t.bg2}, text ${t.text}, accent ${t.accent}`).join('\n')}
+If the request names or clearly implies brand colors (for example "black and gold"), set "theme" to null and give "colors": {"bg1","bg2","text","accent"} as 6-digit hex values like "#112233", with strong contrast between text and both backgrounds. Otherwise set "colors" to null.
+
+FONT PAIRS (field "fontPair", the number)
+${PAIRS.map((p, i) => `- ${i}: ${p.name} (${p.head} headings)`).join('\n')}
+Studio is friendly and modern, Poster is bold and geometric, Editorial is a refined serif, Impact is tall loud capitals, Warm is a soft cozy serif, Condensed is sporty and strong, Geometric is clean and modern. Choose by mood.
+
+COPY RULES
+- Write all copy in the same language as the request.
+- Never invent facts. Do not make up prices, discounts, dates, times, addresses, ratings, awards, years in business, testimonials or guarantees. If the request lacks a detail a layout needs, pick a different layout or write copy that works without it.
+- Limits: badge up to 14 characters (may be ""), headline up to 44 characters and at most 7 words, sub up to 100 characters in one or two short sentences (may be ""), cta up to 20 characters as a verb phrase such as "Book now" ("" for none), handle only if the request includes one, else "".
+- The headline is a finished line, not a label. No emoji in badge, headline or sub.
+- caption: the text to post with the image, up to 350 characters, in the owner's voice, ending with 3 to 6 relevant hashtags on their own line. The same fact rules apply.
+
+THE 3 OPTIONS MUST DIFFER
+Use three different layouts and three different looks (themes or colors, and font pairs). Prefer bold, clean, event, frame and stat when the request fits them. Use photo or spot only for physical products, food, places or people.
+
+Reply with ONLY this JSON and no other text, with exactly 3 objects in "options":
+{"options":[{"format":null,"template":"bold","theme":"ember","colors":null,"fontPair":1,"fields":{"badge":"","headline":"","sub":"","cta":"","handle":""},"caption":""}]}`;
+}
+const setAi = t => { $('#ai-status').textContent = t; };
+function aiBusy(on) { $('#ai-go').disabled = on; $('#ai-stop').hidden = !on; $('#ai-prompt').disabled = on; }
+function aiError(e) {
+  const code = e && e.code;
+  if (code === 'cancelled') return setAi('Stopped.');
+  if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(code)) {
+    $('#sec-ai').hidden = true; askClaude = null; return toast('Claude is not available for this page.');
+  }
+  setAi({
+    rate_limited: 'Too many requests, or your Claude usage limit is reached. Try again in a few minutes.',
+    session_expired: 'Sign in to Claude again, then try once more.',
+    refused: 'Claude could not make an ad from that request. Describe the business and the offer in different words.',
+    empty_completion: 'Claude sent nothing back. Try again with a bit more detail.',
+    invalid_json: 'Claude\'s answer could not be turned into designs. Press Create again.',
+    prompt_too_large: 'That request is too long. Shorten it and try again.',
+  }[code] || 'Something went wrong while asking Claude. Press Create to try again.');
+}
+async function runAi() {
+  const text = $('#ai-prompt').value.trim();
+  if (!askClaude) return;
+  if (!text) { setAi('Say what you want to promote first, for example the business, the offer and the mood.'); return $('#ai-prompt').focus(); }
+  aiCtl = new AbortController(); aiBusy(true); setAi('Claude is designing your options. This can take up to a minute.');
+  try {
+    const res = await askClaude.json(buildAiPrompt(text), { signal: aiCtl.signal, cache: false, onText: () => setAi('Writing your options...') });
+    const list = Array.isArray(res) ? res : res && Array.isArray(res.options) ? res.options : [];
+    const designs = list.map(cleanDesign).filter(Boolean).slice(0, 3);
+    if (!designs.length) throw { code: 'invalid_json' };
+    const fmt = (designs.find(d => d.format) || {}).format || null; designs.forEach(d => { d.format = fmt; });
+    vars = designs; varSel = -1; renderVars(); applyDesign(0);
+    setAi(`${designs.length} options ready. Click one to switch, then edit anything you like.`);
+  } catch (e) { aiError(e); }
+  finally { aiBusy(false); aiCtl = null; }
+}
+function bindAi() {
+  $('#ai-examples').innerHTML = AI_EXAMPLES.map((t, i) => `<button class="eg" type="button" data-i="${i}">${t}</button>`).join('');
+  $('#ai-examples').addEventListener('click', e => { const b = e.target.closest('.eg'); if (b) { $('#ai-prompt').value = AI_EXAMPLES[+b.dataset.i]; $('#ai-examples').hidden = true; $('#ai-prompt').focus(); } });
+  $('#ai-prompt').addEventListener('input', e => { $('#ai-examples').hidden = !!e.target.value.trim(); });
+  $('#ai-go').addEventListener('click', runAi);
+  $('#ai-stop').addEventListener('click', () => { if (aiCtl) aiCtl.abort(); });
+  $('#ai-prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAi(); } });
+  $('#ai-vars').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) applyDesign(+b.dataset.i); });
+  $('#ai-brand').addEventListener('change', renderVarThumbs);
+  $('#f-caption').addEventListener('input', e => { st.caption = e.target.value; saveSoon(); });
+  $('#copy-caption').addEventListener('click', async () => {
+    const t = $('#f-caption'); if (!t.value.trim()) return toast('There is no caption to copy yet.');
+    try { await navigator.clipboard.writeText(t.value); toast('Caption copied'); }
+    catch (e) { t.focus(); t.select(); toast('Press Ctrl+C or Cmd+C to copy the selected text.'); }
+  });
+  samplePromise.then(f => { if (typeof f === 'function' && f && typeof f.json === 'function') { askClaude = f; $('#sec-ai').hidden = false; } });
+}
+
 /* ---------- boot ---------- */
 async function boot() {
   const saved = store.get(KEY), base = fresh();
@@ -1006,7 +1195,7 @@ async function boot() {
   if (!TEMPLATES[st.template]) st.template = 'bold';
   if (!FORMATS.some(f => f.id === st.format)) st.format = 'ig-post';
   st.extras = (st.extras || []).filter(e => e && e.id);
-  buildUi(); bind(); bindExport(); syncUi(); fitStage();
+  buildUi(); bind(); bindExport(); bindAi(); syncUi(); fitStage();
   schedule(); thumbsSoon(); loadFonts();
   if (st.photo) { IMG.photo = await loadImg(st.photo); schedule(); thumbsSoon(); }
   if (st.logo) { IMG.logo = await loadImg(st.logo); schedule(); thumbsSoon(); }
