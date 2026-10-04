@@ -206,13 +206,29 @@ $$('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dat
 // Photo: show a preview with a download link (some embedded viewers block direct downloads)
 const dlg = $('#photoDlg');
 function closePhoto() { dlg.hidden = true; $('#photoImg').removeAttribute('src'); }
+let lastPhoto = null;
 $('#photo').addEventListener('click', () => {
   renderer.render(scene, camera);
+  lastPhoto = null;
+  canvas.toBlob((b) => { lastPhoto = b; }, 'image/png');
   const url = canvas.toDataURL('image/png');
   $('#photoImg').src = url;
   $('#photoDl').href = url;
   dlg.hidden = false;
   $('#photoClose').focus();
+});
+// Inside Claude's artifact viewer a plain <a download> is blocked; its `downloads` capability asks the viewer instead.
+$('#photoDl').addEventListener('click', async (e) => {
+  if (!window.claude?.use) return;                  // normal browser: the link downloads as usual
+  e.preventDefault();
+  try {
+    const dl = await window.claude.use('downloads');
+    if (!dl || !lastPhoto) throw new Error('unavailable');
+    await dl.save({ filename: 'cupra-formentor-vz2.png', data: lastPhoto });
+    toast('Saved');
+  } catch (err) {
+    if (err?.code !== 'declined') toast('Download unavailable here: right-click or long-press the image to save it', 5000);
+  }
 });
 $('#photoClose').addEventListener('click', closePhoto);
 dlg.addEventListener('click', (e) => { if (e.target === dlg) closePhoto(); });
