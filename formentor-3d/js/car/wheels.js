@@ -1,12 +1,12 @@
 // 19" wheel + 245/40 R19 tyre + brake assembly. The wheel axis is local Z, outer face = +Z.
 import * as THREE from 'three';
-import { TIRE_R, TIRE_W } from './profile.js';
+import { TIRE_R, TIRE_W, lerp } from './profile.js';
 
 const RIM_R = 0.2413;              // 19" bead seat radius
 const HALF = TIRE_W / 2;
 
 export const WHEEL_STYLES = {
-  aero: { label: 'Performance 19″', spokes: 'twin', count: 5, rim: 0x23262b, accent: 'copper' },
+  aero: { label: 'Performance 19″', spokes: 'twin', count: 5, rim: 0x101113, accent: 'copper' },
   sport: { label: 'Sport 19″', spokes: 'ten', count: 10, rim: 0xb9bdc2, accent: 'none' },
   blade: { label: 'Blade 19″', spokes: 'y', count: 5, rim: 0x0c0d0f, accent: 'copper' },
 };
@@ -39,15 +39,23 @@ function barrelGeometry() {
 
 function spokeShape(kind) {
   const s = new THREE.Shape();
-  if (kind === 'twin') {          // two blades that fan out from the hub (V pair)
-    const blade = (sign) => {
+  if (kind === 'twin') {          // Formentor-style: two swept arms per spoke that fan out towards the rim
+    const arm = (sign) => {
       const b = new THREE.Shape();
-      const k = sign;
-      b.moveTo(0.052, k * 0.004); b.lineTo(0.130, k * 0.014); b.lineTo(0.222, k * 0.034);
-      b.lineTo(0.222, k * 0.072); b.lineTo(0.130, k * 0.040); b.lineTo(0.052, k * 0.024); b.closePath();
+      const r0 = 0.056, r1 = 0.224, N = 14, swirl = 0.22;
+      const side = [];
+      for (let k = 0; k <= N; k++) {
+        const f = k / N, r = lerp(r0, r1, f);
+        const c = swirl * Math.pow(f, 1.4) + sign * lerp(0.05, 0.17, Math.pow(f, 1.2));
+        const ha = lerp(0.034, 0.052, f) / 2 / r;
+        side.push([r, c + ha, c - ha]);
+      }
+      side.forEach(([r, a], i) => (i ? b.lineTo(r * Math.cos(a), r * Math.sin(a)) : b.moveTo(r * Math.cos(a), r * Math.sin(a))));
+      for (let i = side.length - 1; i >= 0; i--) { const [r, , a] = side[i]; b.lineTo(r * Math.cos(a), r * Math.sin(a)); }
+      b.closePath();
       return b;
     };
-    return [blade(1), blade(-1)];
+    return [arm(1), arm(-1)];
   } else if (kind === 'ten') {
     s.moveTo(0.050, -0.012); s.lineTo(0.140, -0.015); s.lineTo(0.222, -0.024);
     s.lineTo(0.222, 0.024); s.lineTo(0.140, 0.015); s.lineTo(0.050, 0.012); s.closePath();
@@ -77,7 +85,7 @@ export function buildWheel(styleKey, mats, side = 1) {
   rimMat.color.setHex(style.rim);
   rimMat.userData.isRim = true;
   const spokeGeo = new THREE.ExtrudeGeometry(spokeShape(style.spokes), {
-    depth: 0.026, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 8,
+    depth: 0.03, bevelEnabled: true, bevelSize: 0.0035, bevelThickness: 0.005, bevelSegments: 2, curveSegments: 8,
   });
   spokeGeo.translate(0, 0, 0.040);
   const n = style.count;
@@ -87,7 +95,7 @@ export function buildWheel(styleKey, mats, side = 1) {
     rotor.add(sp);
   }
   // ring that ties the spokes together near the lip + centre hub
-  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.2335, 0.009, 14, 90), style.accent === 'copper' ? mats.copper : rimMat);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.2335, 0.0065, 14, 90), style.accent === 'copper' ? mats.copper : rimMat);
   lip.position.z = 0.098;
   rotor.add(lip);
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.075, 0.05, 40), rimMat);

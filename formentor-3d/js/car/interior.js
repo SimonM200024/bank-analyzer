@@ -53,7 +53,7 @@ export function buildInterior() {
   const seat = (x, z, w = 0.5, headrest = true) => {
     box(0.52, 0.14, w, 0.05, fabric, x, 0.48, z);
     const back = box(0.13, 0.64, w, 0.05, fabric, x - 0.28, 0.82, z, [0, 0, 0.2]);
-    box(0.012, 0.5, w * 0.7, 0.004, stitch, x - 0.215, 0.82, z, [0, 0, 0.2]);
+    for (const dz of [-0.12, 0.12]) box(0.006, 0.46, 0.008, 0.002, stitch, x - 0.212, 0.82, z + dz, [0, 0, 0.2]);
     if (headrest) box(0.09, 0.2, 0.26, 0.04, fabric, x - 0.355, 1.2, z, [0, 0, 0.2]);
     void back;
   };

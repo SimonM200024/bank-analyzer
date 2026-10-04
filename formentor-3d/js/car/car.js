@@ -1,7 +1,7 @@
 // Assembles the complete Cupra Formentor VZ2: body, glass, lights, wheels, interior.
 import * as THREE from 'three';
 import { buildBodyGeometry } from './body.js';
-import { buildExterior, windowCutouts, meshTexture, makePlate } from './details.js';
+import { buildExterior, windowCutouts, meshTexture, makePlate, emblemTexture } from './details.js';
 import { buildWheel, WHEEL_STYLES } from './wheels.js';
 import { buildInterior } from './interior.js';
 import { AXLE_F, AXLE_R, TIRE_R, TRACK_HALF, ARCH_R, ARCH_INNER_Z } from './profile.js';
@@ -19,16 +19,25 @@ function makeMaterials() {
   const plate = makePlate();
   const m = {
     paint: new THREE.MeshPhysicalMaterial({ color: 0x5a5f63, ...PAINT_FINISH.metallic }),
-    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.62 }),
+    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x131417, roughness: 0.7 }),
     glass: new THREE.MeshPhysicalMaterial({
-      color: 0x04070a, roughness: 0.02, metalness: 0.45, transparent: true, opacity: 0.62,
-      envMapIntensity: 1.7, depthWrite: false, side: THREE.DoubleSide,
+      color: 0x04070a, roughness: 0.02, metalness: 0.35, transparent: true, opacity: 0.66,
+      envMapIntensity: 1.1, depthWrite: false, side: THREE.DoubleSide,
+    }),
+    // windshield + front doors: lightly tinted; rear windows: privacy glass
+    glassFront: new THREE.MeshPhysicalMaterial({
+      color: 0x0a1016, roughness: 0.02, metalness: 0.3, transparent: true, opacity: 0.38,
+      envMapIntensity: 1.0, depthWrite: false, side: THREE.DoubleSide,
     }),
     frit: new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.35, metalness: 0.2, side: THREE.DoubleSide }),
     blackGloss: new THREE.MeshPhysicalMaterial({ color: 0x060607, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05 }),
     shutLine: new THREE.MeshBasicMaterial({ color: 0x050506 }),
     copper: new THREE.MeshStandardMaterial({ color: COPPER, metalness: 1, roughness: 0.3 }),
-    grille: new THREE.MeshStandardMaterial({ map: meshTexture(), color: 0xffffff, roughness: 0.55, metalness: 0.4 }),
+    grille: new THREE.MeshStandardMaterial({ map: meshTexture([9, 3]), color: 0xffffff, roughness: 0.5, metalness: 0.5 }),
+    grille2: new THREE.MeshStandardMaterial({ map: meshTexture([16, 3]), color: 0xffffff, roughness: 0.65, metalness: 0.2 }),
+    trimSilver: new THREE.MeshStandardMaterial({ color: 0xa9adb3, metalness: 0.9, roughness: 0.34 }),
+    archTrim: new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.78 }),
+    emblem: new THREE.MeshStandardMaterial({ map: emblemTexture(), transparent: true, alphaTest: 0.35, metalness: 0.55, roughness: 0.35, polygonOffset: true, polygonOffsetFactor: -2 }),
     headGlass: new THREE.MeshPhysicalMaterial({ color: 0x07090c, roughness: 0.05, metalness: 0.3, clearcoat: 1 }),
     led: new THREE.MeshStandardMaterial({ color: 0xcfd8e6, emissive: 0xdfe8ff, emissiveIntensity: 0.25, roughness: 0.3 }),
     ledMain: new THREE.MeshStandardMaterial({ color: 0xcfd8e6, emissive: 0xfff2dd, emissiveIntensity: 0.0, roughness: 0.3 }),
@@ -37,7 +46,7 @@ function makeMaterials() {
     plate: new THREE.MeshStandardMaterial({ map: plate.texture, roughness: 0.45 }),
     chrome: new THREE.MeshStandardMaterial({ color: 0xe2e4e8, metalness: 1, roughness: 0.12 }),
     exhaustInner: new THREE.MeshStandardMaterial({ color: 0x0e0e0f, metalness: 0.7, roughness: 0.5 }),
-    mirrorCap: new THREE.MeshPhysicalMaterial({ color: 0x08080a, roughness: 0.25, clearcoat: 1 }),
+    mirrorCap: new THREE.MeshPhysicalMaterial({ color: 0x0b0c0e, roughness: 0.28, clearcoat: 1 }),
     mirrorGlass: new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 1, roughness: 0.04 }),
     tyre: new THREE.MeshStandardMaterial({ color: 0x0e0e0f, roughness: 0.9 }),
     rim: new THREE.MeshPhysicalMaterial({ color: 0x23262b, metalness: 0.85, roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.1 }),
@@ -154,7 +163,7 @@ export function createCar() {
     },
     setWheelStyle(key) { if (WHEEL_STYLES[key]) placeWheels(key); },
     setCaliper(hex) { mats.caliper.color.set(hex); },
-    setGlass(opacity) { mats.glass.opacity = opacity; },
+    setGlass(opacity) { mats.glass.opacity = opacity; mats.glassFront.opacity = opacity * 0.58; },
     setPlate(text) { mats.plateCtl.set(text); },
     setLights(mode) {
       state.lights = mode;

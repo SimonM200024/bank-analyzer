@@ -66,7 +66,7 @@ export function buildBodyGeometry({ cutouts = [] } = {}) {
 // --- Decals ------------------------------------------------------------------
 // fn(s, t) -> [x, y, z] on the body surface for s,t in [0,1]. `outward` is the
 // direction the decal faces (used to choose the winding). Returns a BufferGeometry.
-export function decalGeometry(fn, nu, nv, { outward = [0, 0, 1], offset = 0.0015, uvScale = [1, 1] } = {}) {
+export function decalGeometry(fn, nu, nv, { outward = [0, 0, 1], offset = 0.0015, uvScale = [1, 1], uvFn = null } = {}) {
   const pos = new Float32Array((nu + 1) * (nv + 1) * 3);
   const uv = new Float32Array((nu + 1) * (nv + 1) * 2);
   for (let i = 0; i <= nu; i++) {
@@ -75,7 +75,8 @@ export function decalGeometry(fn, nu, nv, { outward = [0, 0, 1], offset = 0.0015
       const p = fn(s, t);
       const k = i * (nv + 1) + j;
       pos[k * 3] = p[0]; pos[k * 3 + 1] = p[1]; pos[k * 3 + 2] = p[2];
-      uv[k * 2] = s * uvScale[0]; uv[k * 2 + 1] = t * uvScale[1];
+      const [u, v] = uvFn ? uvFn(s, t) : [s, t];
+      uv[k * 2] = u * uvScale[0]; uv[k * 2 + 1] = v * uvScale[1];
     }
   }
   const idx = [];

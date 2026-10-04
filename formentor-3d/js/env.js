@@ -49,7 +49,6 @@ const PRESETS = {
       s.add(panel(1.4, 8, 0xffffff, 8, [11, 4, 10]));
       s.add(panel(20, 0.8, 0xffffff, 5, [0, 1.2, 14]));            // low strips -> lower body reflection
       s.add(panel(20, 0.8, 0xffffff, 4, [0, 1.2, -14]));
-      s.add(panel(6, 4, 0xc07a4c, 2.2, [10, 3, -9]));              // copper kicker
       return s;
     },
   },
