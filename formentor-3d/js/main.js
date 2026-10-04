@@ -203,19 +203,20 @@ $$('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
 // Views
 $$('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
 
-// Photo
+// Photo: show a preview with a download link (some embedded viewers block direct downloads)
+const dlg = $('#photoDlg');
+function closePhoto() { dlg.hidden = true; $('#photoImg').removeAttribute('src'); }
 $('#photo').addEventListener('click', () => {
   renderer.render(scene, camera);
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'cupra-formentor-vz2.png';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    toast('Saved a PNG of the current view');
-  }, 'image/png');
+  const url = canvas.toDataURL('image/png');
+  $('#photoImg').src = url;
+  $('#photoDl').href = url;
+  dlg.hidden = false;
+  $('#photoClose').focus();
 });
+$('#photoClose').addEventListener('click', closePhoto);
+dlg.addEventListener('click', (e) => { if (e.target === dlg) closePhoto(); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dlg.hidden) closePhoto(); });
 
 // Panel toggle (mobile)
 $('#panelToggle').addEventListener('click', () => {

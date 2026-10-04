@@ -107,6 +107,12 @@ body.has-custom p.custom-only { display: block; }
 .views .photo { color: var(--text); margin-left: 8px; }
 
 .fab { display: none; }
+.dlg { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: var(--gutter); background: rgba(5, 6, 8, 0.78); }
+.dlg[hidden] { display: none; }
+.dlg-card { background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 16px; padding: 14px; max-width: min(94vw, 1100px); display: grid; gap: 10px; }
+.dlg-card img { display: block; max-width: 100%; max-height: 66vh; margin: 0 auto; border-radius: 10px; }
+.dlg-card .hint { margin: 0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; }
 #toast { position: fixed; z-index: 20; left: 50%; top: calc(var(--gutter) + 4px); transform: translate(-50%, -16px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 9px 14px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; max-width: calc(100vw - 2 * var(--gutter)); }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 .drop { position: fixed; inset: var(--gutter); z-index: 30; display: grid; place-content: center; border: 2px dashed var(--accent); border-radius: 20px; background: rgba(11, 12, 15, 0.7); font-size: 18px; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
