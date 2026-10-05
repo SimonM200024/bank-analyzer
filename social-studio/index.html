@@ -13,7 +13,7 @@
    Palette: cool grey-green neutrals with one process-magenta accent (print proofing vernacular). */
 :root{
   --bg:#e3e7e5; --panel:#f3f5f4; --raised:#fbfcfb; --ink:#16201c; --ink2:#55615b; --line:#ccd3cf;
-  --accent:#d6247a; --accent-ink:#ffffff; --focus:#d6247a; --ok:#1f7a4d;
+  --accent:#d6247a; --accent-ink:#ffffff; --focus:#d6247a; --ok:#1f7a4d; --warn:#b45309;
   --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -21,9 +21,9 @@
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){--bg:#101413;--panel:#181d1b;--raised:#212725;--ink:#e8ede9;--ink2:#98a39d;--line:#2f3835;--accent:#ff5fa8;--accent-ink:#2a0816;--focus:#ff5fa8;--ok:#5fd39a;color-scheme:dark}
+  :root:not([data-theme="light"]){--bg:#101413;--panel:#181d1b;--raised:#212725;--ink:#e8ede9;--ink2:#98a39d;--line:#2f3835;--accent:#ff5fa8;--accent-ink:#2a0816;--focus:#ff5fa8;--ok:#5fd39a;--warn:#f5a524;color-scheme:dark}
 }
-:root[data-theme="dark"]{--bg:#101413;--panel:#181d1b;--raised:#212725;--ink:#e8ede9;--ink2:#98a39d;--line:#2f3835;--accent:#ff5fa8;--accent-ink:#2a0816;--focus:#ff5fa8;--ok:#5fd39a;color-scheme:dark}
+:root[data-theme="dark"]{--bg:#101413;--panel:#181d1b;--raised:#212725;--ink:#e8ede9;--ink2:#98a39d;--line:#2f3835;--accent:#ff5fa8;--accent-ink:#2a0816;--focus:#ff5fa8;--ok:#5fd39a;--warn:#f5a524;color-scheme:dark}
 
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -83,6 +83,21 @@ details.sec[open]>summary::after{content:"\2212"}
 .brand-prev{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2)}
 .brand-prev i{width:22px;height:22px;border-radius:50%;border:1px solid var(--line)}
 .brand-prev img{height:28px;width:auto;max-width:90px;object-fit:contain;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+.btn.ic svg{flex:none}
+.stage-wrap{position:relative}
+.chk::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.chk.warn{border-color:var(--warn)}
+.chk.warn::before{background:var(--warn)}
+.check-panel{position:absolute;top:50px;left:16px;right:16px;z-index:12;max-width:440px;max-height:60%;overflow:auto;padding:12px 14px;background:var(--raised);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.25)}
+.check-panel ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.check-panel li{display:grid;gap:2px;padding-left:10px;border-left:3px solid var(--warn)}
+.check-panel li.info{border-left-color:var(--line)}
+.check-panel b{font-size:13px}
+.check-panel span{font-size:12.5px;color:var(--ink2)}
+.over{color:var(--warn)!important}
+.warn-t{color:var(--warn)}
+.car-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px}
+.car-strip canvas{flex:none;display:block;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .tools{display:grid;gap:8px;padding:10px;border:1px dashed var(--line);border-radius:8px}
 .tools select{width:auto;padding:5px 8px;font-size:12.5px}
 .sec{padding:16px 0;border-bottom:1px solid var(--line);display:grid;gap:12px}
@@ -121,6 +136,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .sw{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden}
 .sw i{position:absolute;right:5px;bottom:5px;width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
 .sw[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.sw.logo::after{content:"Logo";position:absolute;left:4px;top:3px;font:500 9px var(--mono);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7)}
 .sw.brand::after{content:"Mine";position:absolute;left:4px;top:3px;font:500 9px var(--mono);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7)}
 .colors{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .clr{display:grid;gap:4px;justify-items:start;font-size:11.5px;color:var(--ink2);font-weight:600}
@@ -191,6 +207,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   .rail-head{position:static}
   .brand span{display:none}
   .m-body{grid-template-columns:1fr}
+  .top{gap:6px}
+  .btn.ic .lbl-t{display:none}
+  .btn.ic{padding:6px 9px}
+  .btn.ic.confirm .lbl-t{display:inline}
   .stage-bar{padding:8px 16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -203,7 +223,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/></svg>
       <h1>Postbench</h1><span>Posts and banners for every platform</span>
     </div>
-    <button class="btn ghost" id="btn-reset" type="button">Start over</button>
+    <button class="btn ghost ic" id="btn-undo" type="button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="lbl-t">Undo</span></button>
+    <button class="btn ghost ic" id="btn-redo" type="button" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg><span class="lbl-t">Redo</span></button>
+    <button class="btn ghost ic" id="btn-reset" type="button" aria-label="Start over"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span class="lbl-t" id="reset-lbl">Start over</span></button>
     <button class="btn primary" id="btn-export" type="button">Export</button>
   </header>
 
@@ -212,8 +234,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="stage-bar">
         <span class="mono" id="dims">1080 × 1080 px</span>
         <button class="btn sm ghost" id="btn-play" type="button" hidden>Preview motion</button>
+        <button class="btn sm ghost chk" id="btn-check" type="button" aria-expanded="false" aria-controls="check-panel">Checking</button>
         <label for="chk-safe"><input type="checkbox" id="chk-safe">Show safe zones</label>
       </div>
+      <div class="check-panel" id="check-panel" role="region" aria-label="Design check" hidden><ul id="check-list"></ul></div>
       <div id="board-area">
         <div class="board">
           <canvas id="cv" width="1080" height="1080" tabindex="0" aria-label="Design preview. Drag stickers and text to move them."></canvas>
@@ -252,6 +276,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         </div>
         <p class="hint" id="ai-status" role="status"></p>
         <div class="tpl-grid" id="ai-vars" hidden></div>
+        <div class="tools" id="ai-refine">
+          <label class="fld"><span>Ask for changes to the design on screen</span><input id="ai-change" maxlength="300" autocomplete="off" placeholder="Make it more playful and use dark green"></label>
+          <div class="btns"><button class="btn sm" id="ai-change-go" type="button">Apply change</button></div>
+          <p class="hint" id="ai-change-status" role="status"></p>
+        </div>
       </section>
 
       <details class="sec" id="sec-review">
@@ -290,11 +319,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <label class="fld"><span>Button</span><input id="f-cta" maxlength="28" autocomplete="off"></label>
         </div>
         <label class="fld"><span>Handle or website</span><input id="f-handle" maxlength="40" autocomplete="off"></label>
+        <label class="fld"><span>List, one item per line</span><textarea id="f-list" rows="4" maxlength="900" placeholder="Cappuccino — 2.80&#10;Butter croissant — 2.10"></textarea></label>
+        <p class="hint" id="list-hint">For the Menu, Opening hours and Numbered list layouts, and for carousels. Put a price or time after a dash.</p>
+        <label class="fld"><span>Headline size <output id="o-headscale"></output></span><input type="range" id="r-headscale" min="70" max="140" step="5"></label>
       </section>
 
       <section class="sec">
         <h2>Caption</h2>
         <label class="fld"><span>Post text and hashtags</span><textarea id="f-caption" rows="4" maxlength="1200" placeholder="Write the text that goes with the post, or let Describe your ad draft it."></textarea></label>
+        <p class="hint mono" id="cap-count"></p>
         <label class="fld"><span>Image description (alt text)</span><textarea id="f-alt" rows="2" maxlength="400" placeholder="Describe the image for people who use screen readers. Instagram, Facebook and LinkedIn have a field for it."></textarea></label>
         <div class="btns"><button class="btn" id="copy-caption" type="button">Copy caption</button><button class="btn" id="copy-alt" type="button">Copy alt text</button></div>
         <div class="tools" id="cap-tools" hidden>
@@ -326,6 +359,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           </div>
         </div>
         <label class="fld"><span>Darken photo <output id="o-overlay"></output></span><input type="range" id="r-overlay" min="0" max="90"></label>
+        <div class="row2" id="photo-pos" hidden>
+          <label class="fld"><span>Left or right</span><input type="range" id="r-px" min="0" max="100"></label>
+          <label class="fld"><span>Up or down</span><input type="range" id="r-py" min="0" max="100"></label>
+          <label class="fld"><span>Zoom <output id="o-pz"></output></span><input type="range" id="r-pz" min="100" max="250" step="5"></label>
+          <p class="hint">Or drag the photo on the preview.</p>
+        </div>
         <div class="upl">
           <span class="lbl">Logo</span>
           <div class="thumb-chip">
@@ -453,6 +492,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </div>
       <div class="m-side">
         <p class="mono" id="m-meta"></p>
+        <p class="hint warn-t" id="m-check" hidden></p>
         <div class="btns">
           <button class="btn primary" id="m-png" type="button">Save PNG</button>
           <button class="btn" id="m-jpg" type="button">Save JPG</button>
@@ -464,6 +504,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <button class="btn" id="m-video" type="button">Save animated video</button>
         </div>
         <p class="hint" id="m-video-note" hidden></p>
+        <div id="m-car" hidden>
+          <h3>Carousel</h3>
+          <p class="hint" id="m-car-info"></p>
+          <div class="car-strip" id="m-car-strip"></div>
+          <div class="btns"><button class="btn" id="m-car-zip" type="button">Save slides for Instagram</button><button class="btn" id="m-car-pdf" type="button">Save PDF for LinkedIn</button></div>
+        </div>
         <h3>Same design, other sizes</h3>
         <div class="chips" id="m-sizes"></div>
         <button class="btn" id="m-zip" type="button">Save selected sizes as ZIP</button>
@@ -540,7 +586,7 @@ const fresh = () => ({
   format: 'ig-post', template: 'bold', theme: 'ember',
   fields: { ...TEMPLATES_SAMPLE.bold }, touched: {}, caption: '',
   colors: pickColors(THEMES[0]), bgMode: 'gradient', angle: 145, fontPair: 0,
-  overlay: 55, photo: null, logo: null, logoPos: 'tr', logoSize: 16, extras: [], alt: '',
+  overlay: 55, photo: null, logo: null, logoPos: 'tr', logoSize: 16, extras: [], alt: '', headScale: 100, photoX: 50, photoY: 50, photoZoom: 100,
 });
 function pickColors(t) { return { bg1: t.bg1, bg2: t.bg2, text: t.text, accent: t.accent }; }
 const store = {
@@ -554,7 +600,7 @@ let st, brand = store.get(BKEY), selId = null, showSafe = false;
 function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(x => x + x).join(''); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
 function rgba(h, a) { const [r, g, b] = hex2rgb(h); return `rgba(${r},${g},${b},${a})`; }
 function lum(h) { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; const [r, g, b] = hex2rgb(h); return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); }
-const onColor = h => lum(h) > .42 ? '#14110f' : '#ffffff';
+const onColor = h => { const l = lum(h); return (1.05 / (l + .05)) >= ((l + .05) / (lum('#14110f') + .05)) ? '#ffffff' : '#14110f'; };
 
 /* ---------- text measuring and fitting ---------- */
 const mc = document.createElement('canvas').getContext('2d');
@@ -601,7 +647,7 @@ function textLayer(c, o) {
   let y = o.y;
   if (o.valign === 'middle') y += (o.h - r.hh) / 2; else if (o.valign === 'bottom') y += o.h - r.hh;
   return { t: 'text', x: o.x, y, w: o.w, align: o.align || 'left', lines: r.lines, size: r.s, lh: o.lh || 1.15,
-    font: `${weight} ${r.s}px ${family}`, ls: (o.ls || 0) * r.s, color: o.color, a: o.a ?? 1, h: r.hh };
+    font: `${weight} ${r.s}px ${family}`, ls: (o.ls || 0) * r.s, color: o.color, a: o.a ?? 1, h: r.hh, tw: r.widest };
 }
 
 /* ---------- layer helpers ---------- */
@@ -630,7 +676,7 @@ function buildStack(c, reg, items, o, sc) {
     let part = null;
     if (it.kind === 'text') {
       if (!it.text) continue;
-      const max = it.max * sc;
+      const max = Math.max(it.max * sc, Math.min(it.min || 0, it.max));
       const l = textLayer(c, { ...it, x: reg.x, y: 0, w: reg.w, h: reg.h * (it.share || .5), max, min: Math.min(it.min || 10, max), align: o.align, valign: 'top' });
       part = { layers: [l], hh: l.h };
     } else if (it.kind === 'pill') {
@@ -656,23 +702,86 @@ function stack(c, reg, items, o = {}) {
   for (const p of b.parts) for (const l of p.layers) { l.y += y0 + p.oy; out.push(l); }
   return out;
 }
-const iHead = (c, o = {}) => ({ kind: 'text', text: c.f.headline, font: 'head', max: c.s * .15 * c.fonts.hs, min: c.u * .03, share: .55, color: c.col.text, lh: 1.02, gap: c.u * .035, ...o });
-const iSub = (c, o = {}) => ({ kind: 'text', text: c.f.sub, font: 'body', max: c.s * .045, min: c.u * .02, share: .26, color: c.col.text, a: .86, lh: 1.35, gap: c.u * .045, lite: true, ...o });
+const iHead = (c, o = {}) => { const it = { kind: 'text', text: c.f.headline, font: 'head', max: c.s * .15 * c.fonts.hs, min: c.u * .03, share: .55, color: c.col.text, lh: 1.02, gap: c.u * .035, ...o }; it.max *= c.hsc; return it; };
+const iSub = (c, o = {}) => ({ kind: 'text', text: c.f.sub, font: 'body', max: c.s * .045, min: c.u * .026, share: .26, color: c.col.text, a: .86, lh: 1.35, gap: c.u * .045, lite: true, ...o });
 const iCta = (c, o = {}) => ({ kind: 'pill', text: c.f.cta, fill: c.col.text, color: c.col.onText, gap: c.u * .035, ...o });
-const iHandle = (c, o = {}) => ({ kind: 'text', text: c.f.handle, font: 'body', weight: 700, max: c.s * .032, min: c.u * .018, share: .1, color: c.col.text, a: .72, ls: .03, lh: 1.2, gap: 0, lite: true, ...o });
-const iTag = (c, o = {}) => ({ kind: 'text', text: c.f.badge, font: 'body', weight: 700, max: c.s * .034, min: c.u * .018, share: .08, color: c.col.accent, upper: true, ls: .18, lh: 1.2, gap: c.u * .03, ...o });
+const iHandle = (c, o = {}) => ({ kind: 'text', text: c.f.handle, font: 'body', weight: 700, max: c.s * .035, min: c.u * .026, share: .1, color: c.col.text, a: .72, ls: .03, lh: 1.2, gap: 0, lite: true, ...o });
+const iTag = (c, o = {}) => ({ kind: 'text', text: c.f.badge, font: 'body', weight: 700, max: c.s * .034, min: c.u * .026, share: .08, color: c.col.accent, upper: true, ls: .18, lh: 1.2, gap: c.u * .03, ...o });
 
 /* ---------- templates ---------- */
 const TEMPLATES_SAMPLE = {
-  bold:  { badge: '30% OFF', headline: 'Weekend bake sale', sub: 'Fresh bread, pastries and cakes. Saturday and Sunday only.', cta: 'Order now', handle: '@cornerbakery' },
-  clean: { badge: 'New', headline: 'Sourdough, delivered', sub: 'A fresh loaf at your door every Friday morning.', cta: 'Subscribe', handle: '@cornerbakery' },
-  photo: { badge: 'Open late', headline: 'Warm bread until 9pm', sub: 'Come in after work. We bake a second batch every evening.', cta: 'Visit us', handle: '@cornerbakery' },
-  spot:  { badge: 'New', headline: 'Cardamom morning bun', sub: 'Soft, sticky and baked fresh at 6am.', cta: 'Pre-order', handle: '@cornerbakery' },
-  quote: { badge: '★★★★★', headline: 'Best croissant I\'ve had outside Paris.', sub: 'Maya R., Google review', cta: '', handle: '@cornerbakery' },
-  event: { badge: 'Sat 14 Jun', headline: 'Bread baking workshop', sub: '10:00 to 13:00. 12 seats. Corner Bakery, Elm Street.', cta: 'Reserve a seat', handle: '@cornerbakery' },
-  stat:  { badge: '4.9', headline: 'Average rating from 1,200 customers', sub: 'Thank you for baking this with us.', cta: '', handle: '@cornerbakery' },
-  frame: { badge: 'Est. 2014', headline: 'Baked slowly. Shared often.', sub: 'Find us on Elm Street, open daily from 7am.', cta: 'Find us', handle: '@cornerbakery' },
+  bold:  { badge: '30% OFF', headline: 'Weekend bake sale', sub: 'Fresh bread, pastries and cakes. Saturday and Sunday only.', cta: 'Order now', handle: '@cornerbakery', list: '' },
+  clean: { badge: 'New', headline: 'Sourdough, delivered', sub: 'A fresh loaf at your door every Friday morning.', cta: 'Subscribe', handle: '@cornerbakery', list: '' },
+  photo: { badge: 'Open late', headline: 'Warm bread until 9pm', sub: 'Come in after work. We bake a second batch every evening.', cta: 'Visit us', handle: '@cornerbakery', list: '' },
+  spot:  { badge: 'New', headline: 'Cardamom morning bun', sub: 'Soft, sticky and baked fresh at 6am.', cta: 'Pre-order', handle: '@cornerbakery', list: '' },
+  quote: { badge: '★★★★★', headline: 'Best croissant I\'ve had outside Paris.', sub: 'Maya R., Google review', cta: '', handle: '@cornerbakery', list: '' },
+  event: { badge: 'Sat 14 Jun', headline: 'Bread baking workshop', sub: '10:00 to 13:00. 12 seats. Corner Bakery, Elm Street.', cta: 'Reserve a seat', handle: '@cornerbakery', list: '' },
+  stat:  { badge: '4.9', headline: 'Average rating from 1,200 customers', sub: 'Thank you for baking this with us.', cta: '', handle: '@cornerbakery', list: '' },
+  frame: { badge: 'Est. 2014', headline: 'Baked slowly. Shared often.', sub: 'Find us on Elm Street, open daily from 7am.', cta: 'Find us', handle: '@cornerbakery', list: '' },
+  menu:  { badge: 'Autumn menu', headline: 'Fresh from the oven', sub: 'Baked every morning from 7am.', cta: 'Order ahead', handle: '@cornerbakery', list: 'Sourdough loaf — €4.50\nCardamom bun — €3.20\nPumpkin bun — €3.40\nButter croissant — €2.10\nCappuccino — €2.80' },
+  hours: { badge: 'Visit us', headline: 'Opening hours', sub: 'Closed on public holidays.', cta: '', handle: '@cornerbakery', list: 'Monday to Friday — 7:00 to 19:00\nSaturday — 8:00 to 16:00\nSunday — 8:00 to 13:00' },
+  steps: { badge: 'Bread tips', headline: '3 ways to keep bread fresh', sub: '', cta: 'Save this post', handle: '@cornerbakery', list: 'Store it cut side down on a wooden board\nFreeze slices and toast them straight from frozen\nRevive the crust in a hot oven for 5 minutes' },
 };
+/* list lines: "name — price", "days | hours" or a plain line; the last dash or bar splits the value off */
+function parseList(t) {
+  return String(t || '').split('\n').map(l => l.trim()).filter(Boolean).slice(0, 16).map(raw => {
+    let i = Math.max(raw.lastIndexOf('|'), raw.lastIndexOf('\t')), len = 1;
+    if (i < 0) { const m = [...raw.matchAll(/\s[—–-]\s/g)].pop(); if (m) { i = m.index; len = m[0].length; } }
+    return i > 0 && raw.slice(i + len).trim() ? { label: raw.slice(0, i).trim(), value: raw.slice(i + len).trim(), raw } : { label: raw, value: '', raw };
+  });
+}
+function arrowLayers(cx, cy, r, color, bg) {
+  const sw = Math.max(2, r * .16), k = r * .42;
+  return [E(cx, cy, r, r, bg), { t: 'line', x1: cx - k, y1: cy, x2: cx + k, y2: cy, color, sw }, { t: 'line', x1: cx + k * .2, y1: cy - k * .7, x2: cx + k, y2: cy, color, sw }, { t: 'line', x1: cx + k * .2, y1: cy + k * .7, x2: cx + k, y2: cy, color, sw }];
+}
+function listLayers(c, reg, items, style) {
+  const { u, col } = c, n = items.length, out = [];
+  const gap = style === 'steps' ? u * .022 : 0;
+  const rowH = Math.min(c.s * (style === 'steps' ? .13 : .085), (reg.h - gap * (n - 1)) / n);
+  const total = n * rowH + gap * (n - 1), y0 = reg.y + Math.max(0, (reg.h - total) * (c.wide ? .5 : .3));
+  if (style === 'hours') out.push(R(reg.x - u * .035, y0 - u * .025, reg.w + u * .07, total + u * .05, col.text, { r: u * .03, a: .08 }));
+  items.forEach((it, i) => {
+    const y = y0 + i * (rowH + gap);
+    if (style === 'steps') {
+      const d = Math.min(rowH * .8, c.s * .1), cxn = reg.x + d / 2, cyn = y + rowH / 2, tx = reg.x + d + u * .035;
+      out.push(E(cxn, cyn, d / 2, d / 2, col.accent));
+      out.push(textLayer(c, { text: String(i + 1), x: cxn - d / 2, y: cyn - d / 2, w: d, h: d, font: 'head', color: col.onAccent, align: 'center', valign: 'middle', max: d * .56, min: 6, lh: 1 }));
+      out.push(textLayer(c, { text: it.raw, x: tx, y, w: reg.x + reg.w - tx, h: rowH, font: 'body', weight: 600, color: col.text, align: 'left', valign: 'middle', max: c.s * .046, min: u * .018, lh: 1.2 }));
+      return;
+    }
+    const fs = Math.min(rowH * .5, c.s * .046);
+    const val = it.value ? textLayer(c, { text: it.value, x: reg.x + reg.w * .5, y, w: reg.w * .5, h: rowH, font: 'body', weight: 700, color: style === 'menu' ? col.accent : col.text, align: 'right', valign: 'middle', max: fs, min: u * .016, lh: 1.1, balance: false }) : null;
+    const vw = val ? val.tw + u * .05 : 0;
+    const name = textLayer(c, { text: it.label, x: reg.x, y, w: reg.w - vw, h: rowH * .96, font: 'body', weight: style === 'menu' ? 600 : 700, color: col.text, align: 'left', valign: 'middle', max: fs, min: u * .016, lh: 1.1 });
+    if (style === 'menu' && val && name && name.lines.length === 1) {
+      const x1 = reg.x + name.tw + u * .022, x2 = reg.x + reg.w - val.tw - u * .022, ly = y + rowH / 2 + name.size * .3;
+      if (x2 - x1 > u * .04) out.push({ t: 'line', x1, y1: ly, x2, y2: ly, color: col.text, sw: Math.max(1.5, name.size * .1), dash: [.1, name.size * .32], a: .45 });
+    }
+    if (style === 'hours' && i < n - 1) out.push({ t: 'line', x1: reg.x, y1: y + rowH, x2: reg.x + reg.w, y2: y + rowH, color: col.text, sw: Math.max(1, u * .002), a: .16 });
+    out.push(name, val);
+  });
+  return out.filter(Boolean);
+}
+const bottomOf = Ls => Math.max(...Ls.map(l => l.y + (l.h || 0)));
+const topOf = Ls => Math.min(...Ls.map(l => l.y));
+function listTemplate(c, style) {
+  const { w, h, u, col, ix, iy, iw, ih } = c, items = parseList(c.f.list).slice(0, c.story ? 14 : c.wide ? 8 : 12);
+  if (c.ultra || !items.length) return TEMPLATES.clean.build(c);
+  const L = [], center = style === 'hours', align = center ? 'center' : 'left', cta = { fill: col.accent, color: col.onAccent }, bar = Math.max(4, u * .014);
+  if (style === 'menu') L.push(R(0, 0, w, bar, col.accent), R(0, h - bar, w, bar, col.accent));
+  else if (style === 'hours') L.push(E(w * .92, h * .92, u * .42, u * .42, col.accent, { a: .14 }));
+  else L.push(E(w, 0, u * .28, u * .28, col.accent, { a: .9 }), E(w, 0, u * .42, u * .42, col.accent, { a: .14 }));
+  if (c.wide) {
+    L.push(...stack(c, { x: ix, y: iy, w: iw * .42, h: ih }, [iTag(c), iHead(c, { max: c.s * .1 * c.fonts.hs }), iSub(c, { max: c.s * .036 }), iCta(c, cta), iHandle(c)], { align: 'left', valign: 'middle' }));
+    L.push(...listLayers(c, { x: ix + iw * .5, y: iy, w: iw * .5, h: ih }, items, style));
+    return L;
+  }
+  const head = stack(c, { x: ix, y: iy, w: style === 'steps' ? iw * .7 : iw, h: ih * .3 }, [iTag(c), iHead(c, { max: c.s * .1 * c.fonts.hs, share: .8 })], { align, valign: 'top' });
+  const foot = stack(c, { x: ix, y: iy + ih * .76, w: iw, h: ih * .24 }, [iSub(c, { max: c.s * .036, share: .4 }), iCta(c, cta), iHandle(c)], { align, valign: 'bottom' });
+  const top = (head.length ? bottomOf(head) : iy) + u * .05, bottom = (foot.length ? topOf(foot) : iy + ih) - u * .05;
+  L.push(...head, ...listLayers(c, { x: center ? ix + iw * .08 : ix, y: top, w: center ? iw * .84 : iw, h: Math.max(u * .12, bottom - top) }, items, style), ...foot);
+  return L;
+}
 function sticker(c, cx, cy, d, text) {
   const r = d / 2;
   const t = textLayer(c, { text, x: cx - r * .68, y: cy - r * .5, w: r * 1.36, h: r, font: 'head', color: c.col.onAccent, align: 'center', valign: 'middle', max: r * .62 * c.fonts.hs, min: 10, lh: .95, upper: true });
@@ -705,7 +814,7 @@ const TEMPLATES = {
       ? [0, 0, w, 0, [[0, k(ov)], [.7, k(ov * .45)], [1, k(0)]]]
       : [0, 0, 0, h, [[0, k(ov * .35)], [.4, k(ov * .12)], [1, k(ov)]]];
     L.push(R(0, 0, w, h, { g: scrim }));
-    L.push(...stack(c, { x: ix, y: iy, w: iw, h: ih * .1 }, [{ kind: 'pill', text: c.f.badge, fill: col.accent, color: col.onAccent, upper: true, ls: .12, ph: u * .06, gap: 0, lite: true }], { align: 'left', valign: 'top' }));
+    L.push(...stack(c, { x: ix, y: iy, w: iw, h: ih * .1 }, [{ kind: 'pill', text: c.f.badge, fill: col.accent, color: col.onAccent, upper: true, ls: .12, ph: u * .07, gap: 0, lite: true }], { align: 'left', valign: 'top' }));
     const reg = c.wide ? { x: ix, y: iy + ih * .12, w: iw * .6, h: ih * .88 } : { x: ix, y: iy + ih * .14, w: iw, h: ih * .86 };
     L.push(...stack(c, reg, [iHead(c, { color: white }), iSub(c, { color: white }), iCta(c, { fill: col.accent, color: col.onAccent }), iHandle(c, { color: white })], { align: 'left', valign: c.wide ? 'middle' : 'bottom' }));
     return L;
@@ -717,7 +826,7 @@ const TEMPLATES = {
     else { const ch = ih * (c.story ? .42 : .44); card = { x: ix, y: iy, w: iw, h: ch }; reg = { x: ix, y: iy + ch + u * .045, w: iw, h: ih - ch - u * .045 }; }
     const r = u * .04;
     L.push(R(card.x, card.y, card.w, card.h, '#000', { r, shadow: true }), { t: 'photo', x: card.x, y: card.y, w: card.w, h: card.h, r, ph: true });
-    L.push(...stack(c, { x: card.x + u * .03, y: card.y + u * .03, w: card.w - u * .06, h: u * .1 }, [{ kind: 'pill', text: c.f.badge, fill: col.accent, color: col.onAccent, upper: true, ls: .1, ph: u * .06, gap: 0 }], { align: 'left', valign: 'top' }));
+    L.push(...stack(c, { x: card.x + u * .03, y: card.y + u * .03, w: card.w - u * .06, h: u * .1 }, [{ kind: 'pill', text: c.f.badge, fill: col.accent, color: col.onAccent, upper: true, ls: .1, ph: u * .07, gap: 0 }], { align: 'left', valign: 'top' }));
     L.push(...stack(c, reg, [iHead(c, { max: c.s * .105 * c.fonts.hs }), iSub(c), iCta(c, { fill: col.accent, color: col.onAccent }), iHandle(c)], { align: 'left', valign: c.wide ? 'middle' : 'top' }));
     return L;
   } },
@@ -767,6 +876,21 @@ const TEMPLATES = {
       iSub(c), iCta(c, { outline: true, fill: col.text, color: col.text }), iHandle(c)], { align: 'center', valign: 'middle' }));
     return L;
   } },
+  menu: { name: 'Menu or prices', list: true, build: c => listTemplate(c, 'menu') },
+  hours: { name: 'Opening hours', list: true, build: c => listTemplate(c, 'hours') },
+  steps: { name: 'Numbered list', list: true, build: c => listTemplate(c, 'steps') },
+  slide: { name: 'Carousel slide', hidden: true, build(c) {
+    const { w, h, u, col, ix, iy, iw, ih } = c, L = [], sl = c.st.slide || { i: 1, n: 1 };
+    L.push(E(w * .96, h * .06, u * .36, u * .36, col.accent, { a: .14 }));
+    L.push(...stack(c, { x: ix, y: iy, w: c.wide ? iw * .8 : iw, h: ih * .82 }, [
+      { kind: 'text', text: String(sl.i).padStart(2, '0'), font: 'head', max: c.s * .24 * c.fonts.hs, min: u * .06, share: .32, color: col.accent, lh: .95, gap: u * .02 },
+      { kind: 'rect', w: u * .12, h: u * .012, fill: col.accent, gap: u * .04 },
+      iHead(c, { max: c.s * .1 * c.fonts.hs, share: .45 }), iSub(c, { max: c.s * .05, weight: 700, lite: false })], { align: 'left', valign: 'middle' }));
+    const dr = Math.max(3, u * .009), step = dr * 3.2, by = iy + ih - u * .03;
+    for (let k = 0; k < sl.n; k++) L.push(E(ix + dr + k * step, by, dr, dr, k === sl.i - 1 ? col.accent : col.text, { a: k === sl.i - 1 ? 1 : .28 }));
+    if (sl.i < sl.n || sl.more) L.push(...arrowLayers(w - c.m - u * .045, by, u * .045, col.onAccent, col.accent));
+    return L;
+  } },
 };
 const LAYOUT_HELP = {
   "bold": "Promotions and sales. badge = a discount or short hook shown in a starburst, such as '20% OFF' or 'SALE'. The headline is set in capitals.",
@@ -776,9 +900,12 @@ const LAYOUT_HELP = {
   "quote": "Customer testimonial. headline = the quote itself, sub = who said it, badge = stars. Use ONLY when the request contains a real quote.",
   "event": "Events, openings, workshops. badge = the date or time shown in a pill. Use ONLY a date the request gives.",
   "stat": "One big number. badge = the number, such as '4.9' or '10 years'. Use ONLY a figure the request gives.",
-  "frame": "Elegant invitation-style frame. badge = a small label such as 'Est. 2014'. Suits premium, calm or formal brands."
+  "frame": "Elegant invitation-style frame. badge = a small label such as 'Est. 2014'. Suits premium, calm or formal brands.",
+  "menu": "Menu or price list. list = one item per line as 'name — price'. Use ONLY prices the request or details give; without prices, write lines without a price.",
+  "hours": "Opening hours. list = one line per day or range as 'days — hours'. Use ONLY hours the request or details give.",
+  "steps": "Numbered list of 3 to 5 short points such as tips, services or reasons. list = one point per line, up to 60 characters each. It can also be saved as a swipeable carousel."
 };
-const ORDER = Object.keys(TEMPLATES);
+const ORDER = Object.keys(TEMPLATES).filter(k => !TEMPLATES[k].hidden);
 
 /* ---------- layout context ---------- */
 function ctxFor(s, fmt, imgs) {
@@ -790,7 +917,7 @@ function ctxFor(s, fmt, imgs) {
   const col = { ...s.colors }; col.onAccent = onColor(col.accent); col.onText = onColor(col.text);
   const p = PAIRS[s.fontPair] || PAIRS[0];
   return { st: s, w, h, u, s: u * ts, m, story, wide, ultra, top, bot, ix: m, iy, iw: w - 2 * m, ih: by - iy, col,
-    fonts: { head: fam(p.head), hw: p.hw, hs: p.hs, body: fam(p.body), bw: p.bw }, f: s.fields, imgs: imgs || IMG };
+    fonts: { head: fam(p.head), hw: p.hw, hs: p.hs, body: fam(p.body), bw: p.bw }, f: s.fields, imgs: imgs || IMG, hsc: clamp((s.headScale || 100) / 100, .5, 1.6) };
 }
 
 /* ---------- drawing ---------- */
@@ -813,8 +940,8 @@ function drawPhoto(ctx, L, c, ui) {
   ctx.save(); rpath(ctx, L.x, L.y, L.w, L.h, L.r); ctx.clip();
   const img = c.imgs.photo;
   if (img) {
-    const s = Math.max(L.w / img.width, L.h / img.height) * (L.zoom || 1), dw = img.width * s, dh = img.height * s;
-    ctx.drawImage(img, L.x + (L.w - dw) / 2, L.y + (L.h - dh) / 2, dw, dh);
+    const st0 = c.st, s = Math.max(L.w / img.width, L.h / img.height) * (L.zoom || 1) * clamp((st0.photoZoom || 100) / 100, 1, 3), dw = img.width * s, dh = img.height * s;
+    ctx.drawImage(img, L.x + (L.w - dw) * clamp((st0.photoX ?? 50) / 100, 0, 1), L.y + (L.h - dh) * clamp((st0.photoY ?? 50) / 100, 0, 1), dw, dh);
   } else {
     ctx.fillStyle = c.col.bg2; ctx.fillRect(L.x, L.y, L.w, L.h);
     ctx.fillStyle = rgba(c.col.text, .1); ctx.fillRect(L.x, L.y, L.w, L.h);
@@ -834,6 +961,7 @@ function drawLayer(ctx, L, c, ui) {
     case 'ellipse': ctx.beginPath(); ctx.ellipse(L.cx, L.cy, L.rx, L.ry, 0, 0, Math.PI * 2); paint(ctx, L); break;
     case 'poly': ctx.beginPath(); L.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); paint(ctx, L); break;
     case 'photo': drawPhoto(ctx, L, c, ui); break;
+    case 'line': ctx.beginPath(); ctx.moveTo(L.x1, L.y1); ctx.lineTo(L.x2, L.y2); ctx.lineWidth = L.sw || 2; ctx.lineCap = 'round'; ctx.strokeStyle = L.color; if (L.dash) ctx.setLineDash(L.dash); ctx.stroke(); break;
     case 'group': ctx.translate(L.cx, L.cy); ctx.rotate(L.rot); ctx.translate(-L.cx, -L.cy); L.layers.forEach(l => drawLayer(ctx, l, c, ui)); break;
     case 'text': {
       ctx.font = L.font; ctx.fillStyle = L.color; ctx.textBaseline = 'middle'; ctx.textAlign = L.align;
@@ -926,6 +1054,7 @@ function draw(ctx, s, fmt, ui, opt = {}) {
   ctx.save(); ctx.clearRect(0, 0, fmt.w, fmt.h);
   drawBg(ctx, s, fmt.w, fmt.h);
   prep.layers.forEach((L, i) => {
+    if (opt.bgOnly && (L.t === 'text' || L.t === 'group')) return;
     if (t == null) return drawLayer(ctx, L, c, ui);
     if (L.t === 'photo') {
       L = { ...L, zoom: 1 + .07 * Math.min(1, t / (opt.dur || 6)) };
@@ -937,9 +1066,10 @@ function draw(ctx, s, fmt, ui, opt = {}) {
     else if (!bigShape(L, c)) ctx.translate(0, (1 - ease(p)) * c.u * .045);
     drawLayer(ctx, L, c, ui); ctx.restore();
   });
-  const lb = logoBox(c);
+  const lb = opt.bgOnly ? null : logoBox(c);
   if (lb) { ctx.save(); if (t != null) ctx.globalAlpha = ease(clamp((t - .1) / .5, 0, 1)); ctx.drawImage(c.imgs.logo, lb.x, lb.y, lb.w, lb.h); ctx.restore(); }
-  drawExtras(ctx, c, ui, t == null ? null : { t, start: .3 + prep.layers.length * .085 });
+  if (!opt.bgOnly) drawExtras(ctx, c, ui, t == null ? null : { t, start: .3 + prep.layers.length * .085 });
+  if (!opt.bgOnly && s.slide && s.slide.cover) arrowLayers(fmt.w - c.m - c.u * .045, c.iy + c.ih - c.u * .03, c.u * .045, c.col.onAccent, c.col.accent).forEach(L => drawLayer(ctx, L, c, ui));
   if (ui) {
     if (ui.safe) {
       ctx.save(); const lw = Math.max(2, fmt.w / 450);
@@ -951,6 +1081,7 @@ function draw(ctx, s, fmt, ui, opt = {}) {
       ctx.setLineDash([lw * 5, lw * 4]); ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(214,36,122,.95)';
       ctx.strokeRect(c.m, c.iy, c.iw, c.ih); ctx.restore();
     }
+    if (ui.marks && ui.marks.length) { ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = Math.max(2, fmt.w / 360); ctx.setLineDash([fmt.w * .012, fmt.w * .008]); ui.marks.forEach(b => ctx.strokeRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8)); ctx.restore(); }
     const sel = s.extras.find(e => e.id === ui.sel);
     if (sel && sel._bb) { const b = sel._bb, p = fmt.w * .008; ctx.save(); ctx.lineWidth = Math.max(2, fmt.w / 500); ctx.strokeStyle = '#d6247a'; ctx.setLineDash([fmt.w * .01, fmt.w * .007]); ctx.strokeRect(b.x - p, b.y - p, b.w + 2 * p, b.h + 2 * p); ctx.restore(); }
   }
@@ -993,7 +1124,7 @@ function render() {
   const fmt = fmtOf(st.format), k = previewScale(fmt), W = Math.round(fmt.w * k), H = Math.round(fmt.h * k);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; fitStage(); }
   cx.setTransform(k, 0, 0, k, 0, 0);
-  draw(cx, st, fmt, { safe: showSafe, sel: selId });
+  draw(cx, st, fmt, { safe: showSafe, sel: selId, marks: checkOpen ? issues.flatMap(i => i.boxes || []) : null });
 }
 function schedule() { if (!raf) raf = requestAnimationFrame(render); }
 function fitStage() {
@@ -1010,7 +1141,8 @@ function renderThumbs() {
     cvs.width = Math.round(fmt.w * s * q); cvs.height = Math.round(fmt.h * s * q);
     cvs.style.width = fmt.w * s + 'px'; cvs.style.height = fmt.h * s + 'px';
     const x = cvs.getContext('2d'); x.setTransform(s * q, 0, 0, s * q, 0, 0);
-    draw(x, { ...st, template: b.dataset.id, extras: [] }, fmt, null);
+    const id = b.dataset.id, f = TEMPLATES[id].list && !parseList(st.fields.list).length ? { ...st.fields, list: TEMPLATES_SAMPLE[id].list } : st.fields;
+    draw(x, { ...st, template: id, fields: f, extras: [] }, fmt, null);
   });
   renderVarThumbs();
 }
@@ -1026,7 +1158,7 @@ function saveSoon() {
   }, 500);
 }
 function commit(opts = {}) {
-  schedule(); thumbsSoon(); saveSoon(); loadFonts();
+  schedule(); thumbsSoon(); saveSoon(); loadFonts(); histTouch(); checkSoon();
   if (opts.ui !== false) syncUi();
 }
 
@@ -1044,12 +1176,14 @@ function buildUi() {
   drawThemeGrid();
 }
 function drawThemeGrid() {
-  const list = brand ? [{ id: 'brand', name: 'My brand', ...brand.colors, mine: true }, ...THEMES] : THEMES;
-  $('#theme-grid').innerHTML = list.map(t => `<button class="sw${t.mine ? ' brand' : ''}" type="button" data-id="${t.id}" aria-label="${t.name} colors" aria-pressed="false" title="${t.name}" style="background:linear-gradient(135deg,${t.bg1},${t.bg2})"><i style="background:${t.accent}"></i></button>`).join('');
+  const list = [...(brand ? [{ id: 'brand', name: 'My brand', ...brand.colors, mine: true }] : []), ...logoThemes.map((t, i) => ({ id: 'logo' + i, name: 'From your logo', ...t, fromLogo: true })), ...THEMES];
+  $('#theme-grid').innerHTML = list.map(t => `<button class="sw${t.mine ? ' brand' : ''}${t.fromLogo ? ' logo' : ''}" type="button" data-id="${t.id}" aria-label="${t.name} colors" aria-pressed="false" title="${t.name}" style="background:linear-gradient(135deg,${t.bg1},${t.bg2})"><i style="background:${t.accent}"></i></button>`).join('');
   $('#brand-hint').textContent = brand ? 'Your brand is saved in this browser. Saving again replaces it.' : 'Keeps your colors, fonts, logo and handle in this browser so you can reuse them.';
 }
 function syncUi() {
   const fmt = fmtOf(st.format);
+  if (refreshLogoThemes()) drawThemeGrid();
+  updateCapCount();
   $$('#fmt-grid .fmt').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === st.format));
   $$('#tpl-grid .tpl').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === st.template));
   $$('#pair-grid .pair').forEach(b => b.setAttribute('aria-pressed', +b.dataset.i === st.fontPair));
@@ -1057,7 +1191,10 @@ function syncUi() {
   $$('.seg [data-bg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bg === st.bgMode));
   $('#dims').textContent = `${fmt.w} × ${fmt.h} px · ${fmt.ratio}`;
   $('#tpl-hint').hidden = !(TEMPLATES[st.template].usesPhoto && !st.photo);
-  for (const k of ['headline', 'sub', 'badge', 'cta', 'handle']) { const el = $('#f-' + k); if (document.activeElement !== el) el.value = st.fields[k] || ''; }
+  for (const k of ['headline', 'sub', 'badge', 'cta', 'handle', 'list']) { const el = $('#f-' + k); if (document.activeElement !== el) el.value = st.fields[k] || ''; }
+  $('#list-hint').textContent = TEMPLATES[st.template].list && !parseList(st.fields.list).length ? 'This layout shows your list. Add at least one line.' : 'For the Menu, Opening hours and Numbered list layouts, and for carousels. Put a price or time after a dash.';
+  $('#r-headscale').value = st.headScale || 100; $('#o-headscale').textContent = (st.headScale || 100) + '%';
+  $('#photo-pos').hidden = !st.photo; $('#r-px').value = st.photoX ?? 50; $('#r-py').value = st.photoY ?? 50; $('#r-pz').value = st.photoZoom || 100; $('#o-pz').textContent = (st.photoZoom || 100) + '%';
   if (document.activeElement !== $('#f-caption')) $('#f-caption').value = st.caption || '';
   if (document.activeElement !== $('#f-alt')) $('#f-alt').value = st.alt || '';
   $('#ai-brand-row').hidden = !brand; $('#pl-brand-row').hidden = !brand;
@@ -1087,11 +1224,13 @@ function syncUi() {
 function setFormat(id) { st.format = id; commit(); fitStage(); }
 function setTemplate(id) {
   st.template = id;
-  for (const k of Object.keys(st.fields)) if (!st.touched[k]) st.fields[k] = TEMPLATES_SAMPLE[id][k];
+  const sample = TEMPLATES_SAMPLE[id] || {};
+  for (const k of Object.keys(sample)) if (!st.touched[k]) st.fields[k] = sample[k] ?? '';
+  if (TEMPLATES[id].list && !parseList(st.fields.list).length) st.fields.list = sample.list || '';
   commit();
 }
 function applyTheme(id) {
-  const t = id === 'brand' && brand ? { ...brand.colors, id } : THEMES.find(x => x.id === id); if (!t) return;
+  const t = id === 'brand' && brand ? { ...brand.colors, id } : /^logo\d$/.test(id) ? logoThemes[+id.slice(4)] : THEMES.find(x => x.id === id); if (!t) return;
   const oldText = st.colors.text;
   st.theme = id; st.colors = pickColors(t);
   st.extras.forEach(e => { if (e.kind === 'text' && e.color === oldText) e.color = st.colors.text; });
@@ -1112,7 +1251,9 @@ function bind() {
   $('#tpl-grid').addEventListener('click', e => { const b = e.target.closest('.tpl'); if (b) setTemplate(b.dataset.id); });
   $('#theme-grid').addEventListener('click', e => { const b = e.target.closest('.sw'); if (b) applyTheme(b.dataset.id); });
   $('#pair-grid').addEventListener('click', e => { const b = e.target.closest('.pair'); if (b) { st.fontPair = +b.dataset.i; commit(); } });
-  for (const k of ['headline', 'sub', 'badge', 'cta', 'handle']) $('#f-' + k).addEventListener('input', e => { st.fields[k] = e.target.value; st.touched[k] = true; commit({ ui: false }); });
+  for (const k of ['headline', 'sub', 'badge', 'cta', 'handle', 'list']) $('#f-' + k).addEventListener('input', e => { st.fields[k] = e.target.value; st.touched[k] = true; commit({ ui: false }); if (k === 'list') $('#list-hint').textContent = TEMPLATES[st.template].list && !parseList(st.fields.list).length ? 'This layout shows your list. Add at least one line.' : 'For the Menu, Opening hours and Numbered list layouts, and for carousels. Put a price or time after a dash.'; });
+  $('#r-headscale').addEventListener('input', e => { st.headScale = +e.target.value; $('#o-headscale').textContent = st.headScale + '%'; commit({ ui: false }); });
+  for (const [id, k] of [['r-px', 'photoX'], ['r-py', 'photoY'], ['r-pz', 'photoZoom']]) $('#' + id).addEventListener('input', e => { st[k] = +e.target.value; if (k === 'photoZoom') $('#o-pz').textContent = st[k] + '%'; commit({ ui: false }); });
   for (const [k, id] of [['bg1', 'c-bg1'], ['bg2', 'c-bg2'], ['text', 'c-text'], ['accent', 'c-accent']]) $('#' + id).addEventListener('input', e => { const old = st.colors[k]; st.colors[k] = e.target.value; st.theme = 'custom'; if (k === 'text') st.extras.forEach(x => { if (x.kind === 'text' && x.color === old) x.color = e.target.value; }); commit(); });
   $$('.seg [data-bg]').forEach(b => b.addEventListener('click', () => { st.bgMode = b.dataset.bg; commit(); }));
   $('#r-angle').addEventListener('input', e => { st.angle = +e.target.value; commit(); });
@@ -1120,8 +1261,8 @@ function bind() {
   $('#r-logosize').addEventListener('input', e => { st.logoSize = +e.target.value; commit(); });
   $('#s-logopos').addEventListener('change', e => { st.logoPos = e.target.value; commit(); });
   $('#in-photo').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const d = await readImage(f, 1800, 'image/jpeg'); if (!d) return toast('That file could not be read as an image.'); st.photo = d; IMG.photo = await loadImg(d); commit(); });
-  $('#in-logo').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const d = await readImage(f, 700, 'image/png'); if (!d) return toast('That file could not be read as an image.'); st.logo = d; IMG.logo = await loadImg(d); commit(); });
-  $('#rm-photo').addEventListener('click', () => { st.photo = null; IMG.photo = null; commit(); });
+  $('#in-logo').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const d = await readImage(f, 700, 'image/png'); if (!d) return toast('That file could not be read as an image.'); st.logo = d; IMG.logo = await loadImg(d); commit(); if (logoThemes.length) toast('Colors from your logo are suggested under Colors and type.'); });
+  $('#rm-photo').addEventListener('click', () => { st.photo = null; IMG.photo = null; st.photoX = st.photoY = 50; st.photoZoom = 100; commit(); });
   $('#rm-logo').addEventListener('click', () => { st.logo = null; IMG.logo = null; commit(); });
   $('#save-brand').addEventListener('click', saveBrand);
   $('#add-text').addEventListener('click', () => addExtra({ kind: 'text', text: 'New text', x: .5, y: .5, size: .07, color: st.colors.text, weight: 700, font: 'head' }));
@@ -1142,9 +1283,10 @@ function bind() {
   /* reset needs a second click: confirm() is not available in every viewer */
   let rt = 0; const rb = $('#btn-reset');
   rb.addEventListener('click', () => {
-    if (!rb.classList.contains('confirm')) { rb.classList.add('confirm'); rb.textContent = 'Click again to clear'; rt = setTimeout(() => { rb.classList.remove('confirm'); rb.textContent = 'Start over'; }, 3000); return; }
-    clearTimeout(rt); rb.classList.remove('confirm'); rb.textContent = 'Start over';
-    st = fresh(); selId = null; IMG.photo = IMG.logo = null; IMG.ex = {}; vars = []; varSel = -1; activePlan = -1; scratch = null; renderVars(); updateBanner(); renderPlanList(); commit(); fitStage();
+    const rl = $('#reset-lbl');
+    if (!rb.classList.contains('confirm')) { rb.classList.add('confirm'); rl.textContent = 'Click again to clear'; rt = setTimeout(() => { rb.classList.remove('confirm'); rl.textContent = 'Start over'; }, 3000); return; }
+    clearTimeout(rt); rb.classList.remove('confirm'); rl.textContent = 'Start over';
+    st = fresh(); selId = null; IMG.photo = IMG.logo = null; IMG.ex = {}; vars = []; varSel = -1; activePlan = -1; scratch = null; renderVars(); updateBanner(); renderPlanList(); commit(); fitStage(); histReset();
   });
 
   /* dragging stickers and text on the preview */
@@ -1155,18 +1297,30 @@ function bind() {
     const p = pt(e); let hit = null;
     for (let i = st.extras.length - 1; i >= 0; i--) { const b = st.extras[i]._bb, pad = p.f.w * .015; if (b && p.x >= b.x - pad && p.x <= b.x + b.w + pad && p.y >= b.y - pad && p.y <= b.y + b.h + pad) { hit = st.extras[i]; break; } }
     selId = hit ? hit.id : null; syncUi(); schedule();
-    if (hit) { drag = { id: hit.id, dx: hit.x - p.x / p.f.w, dy: hit.y - p.y / p.f.h }; cv.setPointerCapture(e.pointerId); e.preventDefault(); }
+    if (hit) { drag = { id: hit.id, dx: hit.x - p.x / p.f.w, dy: hit.y - p.y / p.f.h }; cv.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+    const img = IMG.photo, ph = img && prepare(st, p.f, IMG).layers.find(l => l.t === 'photo');
+    if (ph && p.x >= ph.x && p.x <= ph.x + ph.w && p.y >= ph.y && p.y <= ph.y + ph.h) {
+      const k = Math.max(ph.w / img.width, ph.h / img.height) * clamp((st.photoZoom || 100) / 100, 1, 3);
+      drag = { photo: true, sx: p.x, sy: p.y, fx: st.photoX ?? 50, fy: st.photoY ?? 50, ex: img.width * k - ph.w, ey: img.height * k - ph.h };
+      cv.setPointerCapture(e.pointerId); e.preventDefault();
+    }
   });
   cv.addEventListener('pointermove', e => {
-    if (!drag) return; const s = st.extras.find(x => x.id === drag.id); if (!s) return; const p = pt(e);
+    if (!drag) return; const p = pt(e);
+    if (drag.photo) {
+      if (drag.ex > 1) st.photoX = Math.round(clamp(drag.fx - (p.x - drag.sx) / drag.ex * 100, 0, 100));
+      if (drag.ey > 1) st.photoY = Math.round(clamp(drag.fy - (p.y - drag.sy) / drag.ey * 100, 0, 100));
+      return schedule();
+    }
+    const s = st.extras.find(x => x.id === drag.id); if (!s) return;
     s.x = clamp(p.x / p.f.w + drag.dx, 0, 1); s.y = clamp(p.y / p.f.h + drag.dy, 0, 1); schedule();
   });
-  const end = () => { if (drag) { drag = null; saveSoon(); } };
+  const end = () => { if (drag) { const wasPhoto = drag.photo; drag = null; commit({ ui: !!wasPhoto }); } };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
   cv.addEventListener('keydown', e => {
     const s = selExtra(); if (!s) return;
     const step = e.shiftKey ? .05 : .01, mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-    if (mv) { s.x = clamp(s.x + mv[0], 0, 1); s.y = clamp(s.y + mv[1], 0, 1); e.preventDefault(); schedule(); saveSoon(); }
+    if (mv) { s.x = clamp(s.x + mv[0], 0, 1); s.y = clamp(s.y + mv[1], 0, 1); e.preventDefault(); commit({ ui: false }); }
     else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); delExtra(); }
   });
 
@@ -1209,6 +1363,15 @@ async function openExport() {
   let grp = '';
   $('#m-sizes').innerHTML = FORMATS.map(f => (f.group !== grp ? `<span class="fmt-group">${(grp = f.group)}</span>` : '') + `<label class="chip"><input type="checkbox" value="${f.id}"${f.group === 'Social' ? ' checked' : ''}>${f.name}</label>`).join('');
   $('#m-pdf').hidden = !fmt.pdf;
+  const warns = issues.filter(i => !i.info);
+  $('#m-check').hidden = !warns.length; $('#m-check').textContent = warns.length ? 'Before you post: ' + warns.map(i => i.title.charAt(0).toLowerCase() + i.title.slice(1)).join('; ') + '. Open the check above the preview for details.' : '';
+  const slides = CAROUSEL_FMTS.includes(fmt.id) ? carouselStates() : null;
+  $('#m-car').hidden = !slides;
+  if (slides) {
+    const n = parseList(st.fields.list).length;
+    $('#m-car-info').textContent = `Your list becomes ${slides.length} slides: a cover, ${n} list slides${st.fields.cta ? ' and a closing slide with your button text' : ''}.`;
+    renderCarStrip(slides, fmt);
+  }
   const vm = videoMime(), vOk = !!vm && fmt.group === 'Social';
   $('#m-video-row').hidden = !vOk; $('#m-video-note').hidden = !vOk;
   $('#m-video-note').textContent = vm && vm.startsWith('video/webm') ? 'This browser saves WebM video. Instagram and TikTok want MP4, so record in Chrome, Edge or Safari, or convert the file.' : 'A silent MP4 of the design animating in. Add music in the app when you post.';
@@ -1220,6 +1383,8 @@ async function openExport() {
 }
 function closeExport() { $('#modal').hidden = true; }
 function bindExport() {
+  $('#m-car-zip').addEventListener('click', () => saveCarousel('zip'));
+  $('#m-car-pdf').addEventListener('click', () => saveCarousel('pdf'));
   $('#m-png').addEventListener('click', () => { if (exp.blob) saveFile(exp.blob, `${baseName()}-${st.format}.png`); });
   $('#m-jpg').addEventListener('click', async () => { const b = await renderBlob(fmtOf(st.format), 'image/jpeg'); saveFile(b, `${baseName()}-${st.format}.jpg`); });
   $('#m-copy').addEventListener('click', async () => {
@@ -1265,6 +1430,7 @@ let askClaude = null, aiCtl = null, vars = [], varSel = -1;
 const samplePromise = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
 const HEX = /^#[0-9a-f]{6}$/i;
 const cleanLine = (v, max) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
+const cleanList = v => (Array.isArray(v) ? v.join('\n') : typeof v === 'string' ? v : '').split('\n').map(l => cleanLine(l, 80)).filter(Boolean).slice(0, 12).join('\n');
 const cleanText = (v, max) => typeof v === 'string' ? v.replace(/\r/g, '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, max) : '';
 function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
 function safeColors(c) {
@@ -1276,9 +1442,9 @@ function safeColors(c) {
 }
 /* Claude's reply is untrusted data: only whitelisted ids, hex colors and trimmed strings get through */
 function cleanDesign(o) {
-  if (!o || typeof o !== 'object' || !Object.prototype.hasOwnProperty.call(TEMPLATES, o.template)) return null;
+  if (!o || typeof o !== 'object' || !Object.prototype.hasOwnProperty.call(TEMPLATES, o.template) || TEMPLATES[o.template].hidden) return null;
   const f = o.fields && typeof o.fields === 'object' ? o.fields : {};
-  const fields = { badge: cleanLine(f.badge, 16), headline: cleanLine(f.headline, 60), sub: cleanLine(f.sub, 120), cta: cleanLine(f.cta, 24), handle: cleanLine(f.handle, 40) };
+  const fields = { badge: cleanLine(f.badge, 16), headline: cleanLine(f.headline, 60), sub: cleanLine(f.sub, 120), cta: cleanLine(f.cta, 24), handle: cleanLine(f.handle, 40), list: cleanList(f.list) };
   if (!fields.headline) return null;
   const col = o.colors && typeof o.colors === 'object' && ['bg1', 'bg2', 'text', 'accent'].every(k => HEX.test(o.colors[k] || '')) ? safeColors(o.colors) : null;
   const theme = THEMES.some(t => t.id === o.theme) ? o.theme : 'ember';
@@ -1347,15 +1513,15 @@ Studio is friendly and modern, Poster is bold and geometric, Editorial is a refi
 COPY RULES
 - ${langRule('Write all copy in the same language as the request.')}
 - Never invent facts. Use only facts from the request and the business details. Do not make up prices, discounts, dates, times, addresses, ratings, awards, years in business, testimonials or guarantees. If a layout needs a detail you do not have, pick a different layout or write copy that works without it.
-- Limits: badge up to 14 characters (may be ""), headline up to 44 characters and at most 7 words, sub up to 100 characters in one or two short sentences (may be ""), cta up to 20 characters as a verb phrase such as "Book now" ("" for none), handle: the social handle from the business details or the request, else "".
+- Limits: badge up to 14 characters (may be ""), headline up to 44 characters and at most 7 words, sub up to 100 characters in one or two short sentences (may be ""), cta up to 20 characters as a verb phrase such as "Book now" ("" for none), handle: the social handle from the business details or the request, else "". list: only for the menu, hours and steps layouts, one item per line separated by \\n, at most 8 lines of up to 60 characters; otherwise "".
 - The headline is a finished line, not a label. No emoji in badge, headline or sub.
 - caption: the text to post with the image, up to 350 characters, in the owner's voice, ending with 3 to 6 relevant hashtags on their own line. The same fact rules apply.
 
 THE 3 OPTIONS MUST DIFFER
-Use three different layouts and three different looks (themes or colors, and font pairs). Prefer bold, clean, event, frame and stat when the request fits them. Use photo or spot only for physical products, food, places or people.
+Use three different layouts and three different looks (themes or colors, and font pairs). Prefer bold, clean, event, frame and stat when the request fits them, and menu, hours or steps when it lists items, prices, opening hours or tips. Use photo or spot only for physical products, food, places or people.
 
 Reply with ONLY this JSON and no other text, with exactly 3 objects in "options":
-{"options":[{"format":null,"template":"bold","theme":"ember","colors":null,"fontPair":1,"fields":{"badge":"","headline":"","sub":"","cta":"","handle":""},"caption":""}]}`;
+{"options":[{"format":null,"template":"bold","theme":"ember","colors":null,"fontPair":1,"fields":{"badge":"","headline":"","sub":"","cta":"","handle":"","list":""},"caption":""}]}`;
 }
 const setAi = t => { $('#ai-status').textContent = t; };
 function aiBusy(on) { $('#ai-go').disabled = on; $('#ai-stop').hidden = !on; $('#ai-prompt').disabled = on; }
@@ -1523,8 +1689,8 @@ function renderStarters() {
 /* ---------- month plan ---------- */
 const PLKEY = 'postbench.plan.v1';
 const PILLARS = { offer: 'Offer', product: 'Product', 'behind-the-scenes': 'Behind the scenes', tip: 'Tip', community: 'Community', occasion: 'Occasion', engagement: 'Question', review: 'Review', post: 'Post' };
-const DESIGN_KEYS = ['template', 'theme', 'colors', 'bgMode', 'angle', 'fontPair', 'overlay', 'fields', 'touched', 'caption', 'alt', 'photo', 'extras'];
-const ALL_TOUCHED = () => ({ badge: true, headline: true, sub: true, cta: true, handle: true });
+const DESIGN_KEYS = ['template', 'theme', 'colors', 'bgMode', 'angle', 'fontPair', 'overlay', 'fields', 'touched', 'caption', 'alt', 'photo', 'extras', 'headScale', 'photoX', 'photoY', 'photoZoom'];
+const ALL_TOUCHED = () => ({ badge: true, headline: true, sub: true, cta: true, handle: true, list: true });
 const clone = o => JSON.parse(JSON.stringify(o, (k, v) => (k === '_bb' ? undefined : v)));
 const snap = s => clone(Object.fromEntries(DESIGN_KEYS.map(k => [k, s[k]])));
 const pad2 = n => String(n).padStart(2, '0');
@@ -1599,20 +1765,20 @@ async function openPost(i) {
   flushPlan();
   if (activePlan < 0) scratch = { state: clone(st), imgs: { photo: IMG.photo, ex: { ...IMG.ex } } };
   activePlan = i; selId = null;
-  Object.assign(st, { caption: '', alt: '', photo: null, extras: [] }, clone(it.design)); st.touched = ALL_TOUCHED(); st.format = plan.format;
+  Object.assign(st, { caption: '', alt: '', photo: null, extras: [], headScale: 100, photoX: 50, photoY: 50, photoZoom: 100 }, clone(it.design)); st.touched = ALL_TOUCHED(); st.format = plan.format;
   await loadDesignImages(st, IMG);
-  commit(); fitStage(); renderPlanList(); updateBanner();
+  commit(); fitStage(); renderPlanList(); updateBanner(); histReset();
 }
 function restoreScratch() { if (scratch) { st = scratch.state; IMG.photo = scratch.imgs.photo; IMG.ex = scratch.imgs.ex; scratch = null; } }
 function closePost() {
   if (activePlan < 0) return;
   flushPlan(); activePlan = -1; selId = null; restoreScratch();
-  commit(); fitStage(); renderPlanList(); updateBanner();
+  commit(); fitStage(); renderPlanList(); updateBanner(); histReset();
 }
 function removePost() {
   if (activePlan < 0) return;
   const i = activePlan; activePlan = -1; selId = null; plan.items.splice(i, 1); restoreScratch();
-  savePlan(); commit(); fitStage(); renderPlanList(); updateBanner(); toast('Post removed from your plan');
+  savePlan(); commit(); fitStage(); renderPlanList(); updateBanner(); histReset(); toast('Post removed from your plan');
 }
 const planDays = () => { const d = $$('#pl-days input:checked').map(i => +i.value); return d.length ? d : [1, 3, 5]; };
 function planDates(start, count, days) {
@@ -1690,13 +1856,13 @@ Font pairs: ${PAIRS.map((p, i) => `${i} ${p.name}`).join(', ')}.
 COPY RULES
 - ${langRule('Write all copy in the language of the business details and notes, or in English if that is unclear.')}
 - Never invent facts. Use only what the business details and notes say. Do not make up prices, discounts, dates, times, opening hours, addresses, ratings, awards, years in business, testimonials or guarantees.
-- Limits: badge up to 14 characters (may be ""), headline up to 44 characters and at most 7 words, sub up to 100 characters (may be ""), cta up to 20 characters ("" for none), handle "".
+- Limits: badge up to 14 characters (may be ""), headline up to 44 characters and at most 7 words, sub up to 100 characters (may be ""), cta up to 20 characters ("" for none), handle "". list: only for the menu, hours and steps layouts, one item per line separated by \\n, at most 6 lines of up to 60 characters; otherwise "".
 - No emoji in badge, headline or sub.
 - caption: the text to post, up to 300 characters, in the owner's voice and tone, ending with 3 to 5 relevant hashtags on their own line.
 - alt: one sentence that describes the image for people who use screen readers, up to 200 characters, including the headline text.
 
 Reply with ONLY this JSON and no other text, with exactly ${dates.length} objects in "posts", in date order:
-{"posts":[{"date":"${dates[0]}","pillar":"tip","template":"clean","theme":"ember","colors":null,"fontPair":0,"fields":{"badge":"","headline":"","sub":"","cta":"","handle":""},"caption":"","alt":""}]}`;
+{"posts":[{"date":"${dates[0]}","pillar":"tip","template":"clean","theme":"ember","colors":null,"fontPair":0,"fields":{"badge":"","headline":"","sub":"","cta":"","handle":"","list":""},"caption":"","alt":""}]}`;
 }
 const setPl = t => { $('#pl-status').textContent = t; };
 function plBusy(on) { $('#pl-go').disabled = on; $('#pl-stop').hidden = !on; }
@@ -1717,7 +1883,7 @@ async function runPlan() {
       const d = cleanDesign(o); if (!d) return;
       const r = resolveDesign(d, useBrand);
       items.push({ id: uid(), date: dates.includes(o.date) ? o.date : dates[Math.min(i, dates.length - 1)], pillar: hasOwn(PILLARS, o.pillar) ? o.pillar : 'post',
-        design: { template: r.template, theme: r.theme, colors: r.colors, bgMode: 'gradient', angle: st.angle, fontPair: r.fontPair, overlay: 55, fields: r.fields, touched: ALL_TOUCHED(), caption: d.caption, alt: cleanLine(o.alt, 300), photo: null, extras: [] } });
+        design: { template: r.template, theme: r.theme, colors: r.colors, bgMode: 'gradient', angle: st.angle, fontPair: r.fontPair, overlay: 55, fields: r.fields, touched: ALL_TOUCHED(), caption: d.caption, alt: cleanLine(o.alt, 300), photo: null, extras: [], headScale: 100, photoX: 50, photoY: 50, photoZoom: 100 } });
     });
     if (!items.length) throw { code: 'invalid_json' };
     if (activePlan >= 0) closePost();
@@ -1788,7 +1954,7 @@ async function runReview() {
     finally { $('#rv-go').disabled = false; }
   }
   st.template = 'quote';
-  st.fields = { badge: stars ? '★'.repeat(stars) : '', headline: excerpt, sub: [name, src ? `${src} review` : ''].filter(Boolean).join(', '), cta: '', handle: st.touched.handle ? st.fields.handle : defaultHandle() };
+  st.fields = { badge: stars ? '★'.repeat(stars) : '', headline: excerpt, sub: [name, src ? `${src} review` : ''].filter(Boolean).join(', '), cta: '', handle: st.touched.handle ? st.fields.handle : defaultHandle(), list: '' };
   st.touched = ALL_TOUCHED();
   st.caption = caption || `Thank you${name ? ', ' + name.split(' ')[0] : ''}!${stars ? ' ' + '★'.repeat(stars) : ''}\n\n“${excerpt}”`;
   st.alt = `Customer review quote: “${excerpt}”${name ? ', ' + name : ''}.`;
@@ -1799,7 +1965,7 @@ function bindReview() { $('#rv-go').addEventListener('click', runReview); }
 /* ---------- caption tools (Claude) ---------- */
 const TONES = { shorter: 'shorter and punchier', friendlier: 'warmer and friendlier', professional: 'more professional', playful: 'more playful' };
 const stripWrap = t => String(t || '').trim().replace(/^```[a-z]*\n?|\n?```$/g, '').trim().replace(/^"""\n?|\n?"""$/g, '').trim();
-const postText = () => [st.fields.badge, st.fields.headline, st.fields.sub, st.fields.cta].filter(Boolean).join(' / ');
+const postText = () => [st.fields.badge, st.fields.headline, st.fields.sub, st.fields.cta, ...parseList(st.fields.list).map(i => i.raw)].filter(Boolean).join(' / ');
 async function capCall(busy, fn) {
   const set = t => { $('#cap-status').textContent = t; }, btns = $$('#cap-tools button');
   if (!askClaude) return;
@@ -1820,12 +1986,12 @@ function rewriteCaption(tone) {
 function translatePost() {
   const lang = $('#tr-lang').value, f = st.fields;
   if (!LANGS.includes(lang)) return;
-  const prompt = `Translate this social media post for a small business into ${lang}. Keep the meaning and keep names, prices, dates and numbers exactly. Make it sound natural to ${lang} speakers rather than word for word. Translate hashtags where that makes sense. Respect the limits: badge up to 14 characters, headline up to 44 characters, sub up to 100 characters, cta up to 20 characters. Keep empty fields empty.\n\nPOST\n${JSON.stringify({ badge: f.badge, headline: f.headline, sub: f.sub, cta: f.cta, caption: st.caption || '', alt: st.alt || '' })}\n\nReply with ONLY this JSON: {"badge":"","headline":"","sub":"","cta":"","caption":"","alt":""}`;
+  const prompt = `Translate this social media post for a small business into ${lang}. Keep the meaning and keep names, prices, dates and numbers exactly. Make it sound natural to ${lang} speakers rather than word for word. Translate hashtags where that makes sense. Respect the limits: badge up to 14 characters, headline up to 44 characters, sub up to 100 characters, cta up to 20 characters; list keeps one item per line. Keep empty fields empty.\n\nPOST\n${JSON.stringify({ badge: f.badge, headline: f.headline, sub: f.sub, cta: f.cta, list: f.list || '', caption: st.caption || '', alt: st.alt || '' })}\n\nReply with ONLY this JSON: {"badge":"","headline":"","sub":"","cta":"","list":"","caption":"","alt":""}`;
   return capCall(`Translating into ${lang}...`, async () => {
     const r = await askClaude.json(prompt, { modelTier: 'quick', cache: false });
     if (!r || typeof r !== 'object') throw { code: 'invalid_json' };
     const h = cleanLine(r.headline, 60); if (f.headline && !h) throw { code: 'invalid_json' };
-    st.fields = { ...st.fields, badge: cleanLine(r.badge, 16), headline: h, sub: cleanLine(r.sub, 120), cta: cleanLine(r.cta, 24) }; st.touched = ALL_TOUCHED();
+    st.fields = { ...st.fields, badge: cleanLine(r.badge, 16), headline: h, sub: cleanLine(r.sub, 120), cta: cleanLine(r.cta, 24), list: f.list ? cleanList(r.list) || f.list : '' }; st.touched = ALL_TOUCHED();
     st.caption = cleanText(r.caption, 1200); st.alt = cleanLine(r.alt, 400); commit();
     return `Translated into ${lang}. Read it through before posting.`;
   });
@@ -1848,21 +2014,69 @@ function bindCaptionTools() {
 }
 
 /* ---------- print PDF: one page with the design as a 300 dpi JPEG ---------- */
-function jpegPdf(jpg, pxW, pxH, ptW, ptH) {
+function pdfFromJpegs(pages, ptW, ptH) {
   const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
   const put = d => { const b = typeof d === 'string' ? enc.encode(d) : d; parts.push(b); len += b.length; };
   const obj = (n, body) => { offs[n] = len; put(`${n} 0 obj\n`); body(); put('\nendobj\n'); };
-  put('%PDF-1.4\n%âãÏÓ\n');
+  const total = 3 + pages.length * 3;
+  put('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
   obj(1, () => put('<< /Type /Catalog /Pages 2 0 R >>'));
-  obj(2, () => put('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
-  obj(3, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
-  obj(4, () => { put(`<< /Type /XObject /Subtype /Image /Width ${pxW} /Height ${pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`); put(jpg); put('\nendstream'); });
-  const content = `q ${ptW} 0 0 ${ptH} 0 0 cm /Im0 Do Q`;
-  obj(5, () => put(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+  obj(2, () => put(`<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(' ')}] /Count ${pages.length} >>`));
+  pages.forEach((pg, i) => {
+    const pid = 3 + i * 3, content = `q ${ptW} 0 0 ${ptH} 0 0 cm /Im${i} Do Q`;
+    obj(pid, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] /Resources << /XObject << /Im${i} ${pid + 1} 0 R >> >> /Contents ${pid + 2} 0 R >>`));
+    obj(pid + 1, () => { put(`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`); put(pg.jpg); put('\nendstream'); });
+    obj(pid + 2, () => put(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+  });
   const xref = len;
-  put('xref\n0 6\n0000000000 65535 f \n' + [1, 2, 3, 4, 5].map(n => String(offs[n]).padStart(10, '0') + ' 00000 n \n').join(''));
-  put(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  put(`xref\n0 ${total}\n0000000000 65535 f \n` + Array.from({ length: total - 1 }, (_, i) => String(offs[i + 1]).padStart(10, '0') + ' 00000 n \n').join(''));
+  put(`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
   return new Blob(parts, { type: 'application/pdf' });
+}
+const jpegPdf = (jpg, pxW, pxH, ptW, ptH) => pdfFromJpegs([{ jpg, w: pxW, h: pxH }], ptW, ptH);
+
+/* ---------- carousels: a cover, one slide per list item, and a closing slide when there is a button text ---------- */
+const CAROUSEL_FMTS = ['ig-post', 'ig-portrait', 'story', 'fb-post', 'x-post'];
+function carouselStates(s = st) {
+  const items = parseList(s.fields.list); if (items.length < 2) return null;
+  const f = s.fields, n = items.length, base = { ...s, extras: [] }, end = !!f.cta;
+  const slides = [{ ...s, template: TEMPLATES[s.template].list ? 'clean' : s.template, fields: { ...f, list: '' }, slide: { cover: true } }];
+  items.forEach((it, i) => slides.push({ ...base, template: 'slide', fields: { badge: '', headline: it.label, sub: it.value, cta: '', handle: '', list: '' }, slide: { i: i + 1, n, more: end } }));
+  if (end) slides.push({ ...base, template: 'frame', fields: { badge: '', headline: f.cta, sub: cleanLine(profile.link, 80), cta: '', handle: f.handle, list: '' }, slide: { end: true } });
+  return slides;
+}
+function renderCarStrip(slides, fmt) {
+  const box = $('#m-car-strip'), k = 120 / fmt.h, q = 2;
+  box.innerHTML = slides.map(() => '<canvas aria-hidden="true"></canvas>').join('');
+  $$('canvas', box).forEach((cvs, i) => {
+    cvs.width = Math.round(fmt.w * k * q); cvs.height = Math.round(fmt.h * k * q); cvs.style.width = Math.round(fmt.w * k) + 'px'; cvs.style.height = '120px';
+    const x = cvs.getContext('2d'); x.setTransform(k * q, 0, 0, k * q, 0, 0); draw(x, slides[i], fmt, null); loadFonts(slides[i]);
+  });
+}
+async function saveCarousel(kind) {
+  const fmt = fmtOf(st.format), slides = carouselStates(); if (!slides) return;
+  const btns = [$('#m-car-zip'), $('#m-car-pdf')]; btns.forEach(b => { b.disabled = true; });
+  try {
+    if (kind === 'zip') {
+      const files = [], enc = new TextEncoder();
+      for (let i = 0; i < slides.length; i++) {
+        $('#m-status').textContent = `Rendering slide ${i + 1} of ${slides.length}`;
+        const b = await renderStateBlob(slides[i], fmt, 'image/png', IMG); files.push({ name: `${pad2(i + 1)}-${baseName()}.png`, data: new Uint8Array(await b.arrayBuffer()) });
+      }
+      if (st.caption || st.alt) files.push({ name: 'caption.txt', data: enc.encode((st.caption || '') + (st.alt ? `\n\nAlt text: ${st.alt}` : '') + '\n') });
+      const zip = makeZip(files); $('#m-status').textContent = `ZIP · ${slides.length} slides · ${(zip.size / 1048576).toFixed(1)} MB. Upload them in this order.`;
+      await saveFile(zip, `${baseName()}-carousel.zip`);
+    } else {
+      const pages = [];
+      for (let i = 0; i < slides.length; i++) {
+        $('#m-status').textContent = `Rendering page ${i + 1} of ${slides.length}`;
+        const b = await renderStateBlob(slides[i], fmt, 'image/jpeg', IMG); pages.push({ jpg: new Uint8Array(await b.arrayBuffer()), w: fmt.w, h: fmt.h });
+      }
+      const pdf = pdfFromJpegs(pages, Math.round(fmt.w * .75), Math.round(fmt.h * .75));
+      $('#m-status').textContent = `PDF · ${slides.length} pages · ${(pdf.size / 1048576).toFixed(1)} MB. On LinkedIn, add it as a document post.`;
+      await saveFile(pdf, `${baseName()}-carousel.pdf`);
+    }
+  } finally { btns.forEach(b => { b.disabled = false; }); }
 }
 
 /* ---------- motion: preview on the stage and video export ---------- */
@@ -1927,6 +2141,220 @@ function bindExtrasAndExports() {
   });
 }
 
+/* ---------- undo and redo: snapshots of the design, grouped by pauses in editing ---------- */
+const dup = v => Array.isArray(v) ? v.map(dup) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== '_bb').map(([k, x]) => [k, dup(x)])) : v;
+let undoStack = [], redoStack = [], histBase = null, histT = 0, restoring = false;
+const imgCache = new Map();
+async function cachedImg(src) {
+  if (imgCache.has(src)) return imgCache.get(src);
+  const i = await loadImg(src); imgCache.set(src, i);
+  if (imgCache.size > 30) imgCache.delete(imgCache.keys().next().value);
+  return i;
+}
+function updateUndoUi() { $('#btn-undo').disabled = !undoStack.length; $('#btn-redo').disabled = !redoStack.length; }
+function histReset() { undoStack = []; redoStack = []; clearTimeout(histT); histT = 0; histBase = dup(st); updateUndoUi(); }
+function histTouch() {
+  if (restoring || !histBase) return;
+  if (!histT) { undoStack.push(histBase); if (undoStack.length > 80) undoStack.shift(); redoStack = []; }
+  clearTimeout(histT); histT = setTimeout(() => { histT = 0; histBase = dup(st); }, 600);
+  updateUndoUi();
+}
+async function histGo(dir) {
+  if (histT) { clearTimeout(histT); histT = 0; histBase = dup(st); }
+  const from = dir < 0 ? undoStack : redoStack, to = dir < 0 ? redoStack : undoStack;
+  if (!from.length || restoring) return;
+  to.push(dup(st)); const next = from.pop();
+  restoring = true; selId = null;
+  st = dup(next);
+  IMG.photo = st.photo ? await cachedImg(st.photo) : null;
+  IMG.logo = st.logo ? await cachedImg(st.logo) : null;
+  const ex = {}; for (const e of st.extras) if (e.kind === 'image' && e.src) ex[e.id] = await cachedImg(e.src); IMG.ex = ex;
+  commit(); fitStage();
+  restoring = false; histBase = dup(st); updateUndoUi();
+  toast(dir < 0 ? 'Undone' : 'Redone');
+}
+
+/* ---------- ask Claude for a change to the design on screen ---------- */
+function refinePrompt(instr) {
+  const cur = { format: st.format, template: st.template, theme: THEMES.some(t => t.id === st.theme) ? st.theme : null, colors: st.colors, fontPair: st.fontPair, fields: { ...st.fields }, caption: st.caption || '' };
+  return `You are the art director inside Postbench, a tool that builds social media posts for small businesses from a fixed set of layouts. Change the current design the way the owner asks, and keep everything they did not ask to change.
+
+OWNER'S REQUEST
+"""
+${instr}
+"""
+
+CURRENT DESIGN
+${JSON.stringify(cur)}
+
+BUSINESS DETAILS (facts you may use)
+${profileBlock()}
+
+SIZES (field "format", use the id): ${FORMATS.map(f => `${f.id} (${f.name})`).join(', ')}.
+
+LAYOUTS (field "template", use the id)
+${ORDER.map(id => `- ${id}: ${LAYOUT_HELP[id]}`).join('\n')}
+
+COLOR THEMES (field "theme", use the id). To use other colors, set "theme" to null and give "colors" as 6-digit hex values like "#112233", with strong contrast between text and both backgrounds.
+${THEMES.map(t => `- ${t.id}: background ${t.bg1} to ${t.bg2}, text ${t.text}, accent ${t.accent}`).join('\n')}
+
+FONT PAIRS (field "fontPair", the number): ${PAIRS.map((p, i) => `${i} ${p.name}`).join(', ')}.
+
+RULES
+- Keep the language of the current design unless the owner asks for another language.
+- Never invent facts. Use only facts from the current design, the owner's request and the business details. Do not make up prices, discounts, dates, times, ratings, awards or testimonials.
+- Limits: badge up to 14 characters, headline up to 44 characters and at most 7 words, sub up to 100 characters, cta up to 20 characters, caption up to 350 characters. list holds one item per line separated by \\n and is only shown by the menu, hours and steps layouts.
+- No emoji in badge, headline or sub.
+
+Reply with ONLY one JSON object with the same keys as the current design, and no other text.`;
+}
+async function runRefine() {
+  const input = $('#ai-change'), instr = input.value.trim(), set = t => { $('#ai-change-status').textContent = t; };
+  if (!askClaude) return;
+  if (!instr) { set('Say what to change, for example "shorter headline" or "use dark green".'); return input.focus(); }
+  const btn = $('#ai-change-go'); btn.disabled = true; set('Claude is changing the design...');
+  try {
+    const d = cleanDesign(await askClaude.json(refinePrompt(instr), { modelTier: 'quick', cache: false }));
+    if (!d) throw { code: 'invalid_json' };
+    const oldText = st.colors.text;
+    st.template = d.template; st.fontPair = d.fontPair; st.bgMode = st.bgMode || 'gradient';
+    st.colors = d.colors || pickColors(THEMES.find(t => t.id === d.theme) || THEMES[0]); st.theme = d.colors ? 'custom' : d.theme;
+    st.fields = { ...d.fields, handle: d.fields.handle || defaultHandle() }; st.touched = ALL_TOUCHED();
+    if (d.caption) st.caption = d.caption;
+    st.extras.forEach(e => { if (e.kind === 'text' && e.color === oldText) e.color = st.colors.text; });
+    if (d.format) st.format = d.format;
+    commit(); fitStage(); input.value = ''; set('Done. Undo brings back the previous version.');
+  } catch (e) { handleAiError(e, set); }
+  finally { btn.disabled = false; }
+}
+
+/* ---------- color schemes suggested from the logo ---------- */
+const hexOf = c => '#' + c.map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('');
+const mixRgb = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+function logoPalettes(img) {
+  const N = 48, cvs = document.createElement('canvas'); cvs.width = cvs.height = N;
+  const x = cvs.getContext('2d', { willReadFrequently: true }), k = Math.min(N / img.width, N / img.height);
+  x.drawImage(img, 0, 0, img.width * k, img.height * k);
+  const d = x.getImageData(0, 0, N, N).data, bins = new Map();
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 160) continue;
+    const key = (d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | (d[i + 2] >> 4), b = bins.get(key) || { n: 0, r: 0, g: 0, b: 0 };
+    b.n++; b.r += d[i]; b.g += d[i + 1]; b.b += d[i + 2]; bins.set(key, b);
+  }
+  const sat = ([r, g, b]) => (Math.max(r, g, b) - Math.min(r, g, b)) / 255, dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const cols = [...bins.values()].sort((a, b) => b.n - a.n).map(b => [b.r / b.n, b.g / b.n, b.b / b.n]).filter(c => sat(c) > .18);
+  if (!cols.length) return [];
+  const p = cols[0], a = cols.find(c => dist(c, p) > 90), W = [255, 255, 255], B = [0, 0, 0], P = hexOf(p), A = a ? hexOf(a) : null;
+  return [
+    safeColors({ bg1: P, bg2: hexOf(mixRgb(p, B, .3)), text: '#ffffff', accent: A || hexOf(mixRgb(p, W, .75)) }),
+    safeColors({ bg1: hexOf(mixRgb(p, W, .9)), bg2: hexOf(mixRgb(p, W, .76)), text: hexOf(mixRgb(p, B, .7)), accent: P }),
+    safeColors({ bg1: '#121212', bg2: hexOf(mixRgb(p, B, .72)), text: '#ffffff', accent: A || P }),
+  ];
+}
+let logoThemes = [], logoKey = '';
+function refreshLogoThemes() {
+  const key = st.logo && IMG.logo ? st.logo.length + st.logo.slice(-40) : '';
+  if (key === logoKey) return false;
+  logoKey = key; logoThemes = key ? logoPalettes(IMG.logo) : []; return true;
+}
+
+/* ---------- design check: what would make the post hard to use ---------- */
+const CAPTION_LIMITS = { 'ig-post': ['Instagram', 2200, 30], 'ig-portrait': ['Instagram', 2200, 30], story: ['Instagram', 2200, 30], 'fb-post': ['Facebook', 63206], 'fb-cover': ['Facebook', 63206], 'x-post': ['X', 280], 'li-banner': ['LinkedIn', 3000], 'yt-thumb': ['YouTube', 5000], pin: ['Pinterest', 500] };
+const capStats = () => { const t = st.caption || ''; return { n: [...t].length, tags: (t.match(/#[\p{L}\p{N}_]+/gu) || []).length }; };
+function updateCapCount() {
+  const { n, tags } = capStats(), lim = CAPTION_LIMITS[st.format], el = $('#cap-count');
+  el.textContent = `${n.toLocaleString()} characters · ${tags} hashtag${tags === 1 ? '' : 's'}` + (lim ? ` · ${lim[0]} allows ${lim[1].toLocaleString()}${lim[2] ? ` and ${lim[2]} hashtags` : ''}` : '');
+  el.classList.toggle('over', !!lim && (n > lim[1] || (!!lim[2] && tags > lim[2])));
+}
+let checkT = 0, issues = [], checkOpen = false;
+function checkSoon() { clearTimeout(checkT); checkT = setTimeout(runCheck, 400); }
+const minReadable = fmt => fmt.pdf ? 8 / 72 * 300 : fmt.group === 'Web ads' ? 10 : 9.5 * fmt.w / 375;
+function textBox(L) {
+  const tw = L.tw ?? L.w, x = L.align === 'center' ? L.x + (L.w - tw) / 2 : L.align === 'right' ? L.x + L.w - tw : L.x;
+  return { x, y: L.y, w: tw, h: L.lines.length * L.size * L.lh };
+}
+function runCheck() {
+  if (playing) return checkSoon();
+  const fmt = fmtOf(st.format), prep = prepare(st, fmt, IMG), c = prep.c, out = [], tpl = TEMPLATES[st.template];
+  const texts = prep.layers.filter(L => L.t === 'text' && L.lines && L.lines.some(l => l.trim()));
+  const tiny = texts.filter(L => L.size < minReadable(fmt));
+  if (tiny.length) out.push({ title: fmt.pdf ? 'Some text will be very small when printed' : 'Some text will be hard to read on a phone', fix: 'Use fewer words, a bigger headline size, or a layout with more room.', boxes: tiny.map(textBox) });
+  const k = Math.min(1, 360 / Math.max(fmt.w, fmt.h)), bw = Math.max(1, Math.round(fmt.w * k)), bh = Math.max(1, Math.round(fmt.h * k));
+  const bc = document.createElement('canvas'); bc.width = bw; bc.height = bh;
+  const bx = bc.getContext('2d', { willReadFrequently: true }); bx.setTransform(k, 0, 0, k, 0, 0);
+  draw(bx, st, fmt, null, { prep, bgOnly: true });
+  const px = bx.getImageData(0, 0, bw, bh).data, low = [];
+  for (const L of texts) {
+    if (!HEX.test(L.color || '')) continue;
+    const b = textBox(L), x0 = clamp(Math.floor(b.x * k), 0, bw - 1), y0 = clamp(Math.floor(b.y * k), 0, bh - 1);
+    const x1 = clamp(Math.ceil((b.x + b.w) * k), x0 + 1, bw), y1 = clamp(Math.ceil((b.y + b.h) * k), y0 + 1, bh), need = L.size >= c.u * .05 ? 3 : 4.5;
+    let worst = 99;
+    for (let gy = 0; gy < 2; gy++) for (let gx = 0; gx < 4; gx++) {
+      const cx0 = x0 + Math.floor((x1 - x0) * gx / 4), cx1 = Math.max(cx0 + 1, x0 + Math.floor((x1 - x0) * (gx + 1) / 4));
+      const cy0 = y0 + Math.floor((y1 - y0) * gy / 2), cy1 = Math.max(cy0 + 1, y0 + Math.floor((y1 - y0) * (gy + 1) / 2));
+      let r = 0, g = 0, bl = 0, n = 0;
+      for (let y = cy0; y < Math.min(cy1, bh); y++) for (let x = cx0; x < Math.min(cx1, bw); x++) { const i = (y * bw + x) * 4; r += px[i]; g += px[i + 1]; bl += px[i + 2]; n++; }
+      if (!n) continue;
+      const avg = [r / n, g / n, bl / n], a = L.a ?? 1, eff = a < 1 ? hexOf(mixRgb(avg, hex2rgb(L.color), a)) : L.color;
+      worst = Math.min(worst, contrast(eff, hexOf(avg)));
+    }
+    if (worst < need) low.push(b);
+  }
+  if (low.length) out.push({ title: 'Some text is hard to read against its background', fix: st.photo && tpl.usesPhoto ? 'Darken the photo, drag it to a calmer spot, or choose another theme.' : 'Choose a theme or colors with more contrast.', boxes: low });
+  if (c.story) {
+    const covered = st.extras.filter(e => e._bb && (e._bb.y < c.top || e._bb.y + e._bb.h > fmt.h - c.bot)).map(e => e._bb);
+    if (covered.length) out.push({ title: 'A sticker sits where the app covers the screen', fix: 'Move it towards the middle. Show safe zones marks the covered areas.', boxes: covered });
+  }
+  const qrs = st.extras.filter(e => e.kind === 'qr');
+  if (qrs.some(e => !qrFor(qrText(e.text)))) out.push({ title: 'A QR code has no link yet', fix: 'Select it under Text and stickers and type the link.' });
+  if (qrs.length && fmt.pdf) {
+    const small = qrs.filter(e => e.size * c.u * 2 / 300 * 2.54 < 2);
+    if (small.length) out.push({ title: 'The QR code will be smaller than 2 cm when printed', fix: 'Make it bigger so phones can scan it from arm\'s length.', boxes: small.map(e => e._bb).filter(Boolean) });
+  }
+  if (qrs.length && fmt.group === 'Social') out.push({ info: true, title: 'A QR code cannot be scanned on the phone it is viewed on', fix: 'Put the link in your caption or bio as well.' });
+  if (tpl.usesPhoto && !st.photo) out.push({ title: 'This layout needs a photo', fix: 'Add one under Photo and logo, or pick another layout.' });
+  if (fmt.pdf && IMG.photo && tpl.usesPhoto) {
+    const ph = prep.layers.find(l => l.t === 'photo');
+    if (ph && IMG.photo.width / (ph.w * clamp((st.photoZoom || 100) / 100, 1, 3) / 300) < 150) out.push({ title: 'The photo is low resolution for print', fix: 'Use a larger photo, at least 2000 pixels wide.' });
+  }
+  const sample = TEMPLATES_SAMPLE[st.template] || {};
+  if (['headline', 'sub', 'badge', 'cta', 'handle', 'list'].some(f => sample[f] && st.fields[f] === sample[f] && !st.touched[f])) out.push({ title: 'The example text is still there', fix: 'Type your own words under Words, or use Describe your ad.' });
+  const lim = CAPTION_LIMITS[st.format], cs = capStats();
+  if (lim && cs.n > lim[1]) out.push({ title: `The caption is longer than ${lim[0]} allows`, fix: `It has ${cs.n.toLocaleString()} characters; the limit is ${lim[1].toLocaleString()}.` });
+  if (lim && lim[2] && cs.tags > lim[2]) out.push({ title: `${lim[0]} allows ${lim[2]} hashtags at most`, fix: `The caption has ${cs.tags}. Keep the ones that matter most.` });
+  const words = [st.fields.headline, st.fields.sub, st.fields.badge, st.fields.cta].join(' ').split(/\s+/).filter(Boolean).length;
+  if (fmt.group !== 'Print' && !tpl.list && words > 35) out.push({ info: true, title: 'There is a lot of text on the image', fix: 'Posts with fewer words are easier to read while scrolling. Move details into the caption.' });
+  issues = out; renderCheck();
+}
+function renderCheck() {
+  const b = $('#btn-check'), warn = issues.filter(i => !i.info).length, tips = issues.length - warn;
+  b.classList.toggle('warn', warn > 0);
+  b.textContent = warn ? `${warn} thing${warn === 1 ? '' : 's'} to check` : tips ? `Looks good · ${tips} tip${tips === 1 ? '' : 's'}` : 'Looks good';
+  $('#check-list').innerHTML = issues.length
+    ? issues.map(i => `<li class="${i.info ? 'info' : ''}"><b>${esc(i.title)}</b><span>${esc(i.fix)}</span></li>`).join('')
+    : '<li class="info"><b>Nothing to fix</b><span>Text size, contrast, photo and caption all look fine for this size.</span></li>';
+  if (checkOpen) schedule();
+}
+function setCheckOpen(on) { checkOpen = on; $('#check-panel').hidden = !on; $('#btn-check').setAttribute('aria-expanded', String(on)); schedule(); }
+
+function bindMore() {
+  $('#btn-undo').addEventListener('click', () => histGo(-1));
+  $('#btn-redo').addEventListener('click', () => histGo(1));
+  document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const t = e.target, key = e.key.toLowerCase();
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable) return;
+    if (key === 'z') { e.preventDefault(); histGo(e.shiftKey ? 1 : -1); }
+    else if (key === 'y') { e.preventDefault(); histGo(1); }
+  });
+  $('#ai-change-go').addEventListener('click', runRefine);
+  $('#ai-change').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runRefine(); } });
+  $('#btn-check').addEventListener('click', () => setCheckOpen(!checkOpen));
+  document.addEventListener('click', e => { if (checkOpen && !e.target.closest('#check-panel, #btn-check')) setCheckOpen(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && checkOpen) setCheckOpen(false); });
+  $('#f-caption').addEventListener('input', updateCapCount);
+}
+
 /* ---------- boot ---------- */
 async function boot() {
   const saved = store.get(KEY), base = fresh();
@@ -1935,13 +2363,13 @@ async function boot() {
   if (!FORMATS.some(f => f.id === st.format)) st.format = 'ig-post';
   st.extras = (st.extras || []).filter(e => e && e.id);
   loadPlan();
-  buildUi(); bind(); bindExport(); bindAi(); bindTabs(); bindProfile(); bindPlan(); bindReview(); bindCaptionTools(); bindExtrasAndExports();
+  buildUi(); bind(); bindExport(); bindAi(); bindTabs(); bindProfile(); bindPlan(); bindReview(); bindCaptionTools(); bindExtrasAndExports(); bindMore();
   renderStarters(); renderBrandPrev(); renderPlanList(); updateBanner(); syncUi(); fitStage();
   schedule(); thumbsSoon(); loadFonts();
   if (st.photo) { IMG.photo = await loadImg(st.photo); schedule(); thumbsSoon(); }
   if (st.logo) { IMG.logo = await loadImg(st.logo); schedule(); thumbsSoon(); }
   for (const e of st.extras) if (e.kind === 'image' && e.src) IMG.ex[e.id] = await loadImg(e.src);
-  schedule();
+  schedule(); syncUi(); checkSoon(); histReset();
 }
 boot();
 })();
