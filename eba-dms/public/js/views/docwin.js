@@ -1,6 +1,7 @@
 // Document window: menus, toolbar, header, thumbnails, Slika/Podatki canvas and
 // six independent right-side panels.
-import { api, esc, el, toast, download, pickFiles, upload, blobUrl, $ } from '../ui/core.js';
+import { api, esc, el, toast, download, pickFiles, upload, blobUrl, downloadBlob, isStandalone, canPrint, noPrint } from '../ui/core.js';
+import { BRAND } from '/core/brand.js';
 import { MenuBar, openMenu, menuKeydown, menusOpen, contextMenu } from '../ui/menu.js';
 import { dialog, alertBox, confirmBox, promptBox, dialogsOpen } from '../ui/dialog.js';
 import { icon } from '../ui/icons.js';
@@ -24,27 +25,29 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
 };
 
-export async function mountDocWindow(app, docId, { channel }) {
+// host: render inside the page (standalone build) instead of owning the window.
+export async function mountDocWindow(app, docId, { channel, host = null, onClose = null, onChanged = null }) {
   const W = {
     id: docId, doc: null, tab: store.get('eba-doc-tab', 'cover'), center: 'image', page: 0, zoom: 'auto', ruler: false,
     thumbs: true, details: app.personal.view?.details !== false, scope: 'main', dirty: false, linkedPages: [], highlight: null,
     evFilter: { action: '', user: '' }, linkFilter: '', linkSort: 'createdAt', versionSel: null,
   };
-  document.body.innerHTML = `<div class="docwin app">
+  const container = host || document.getElementById('dms-root') || document.body;
+  container.innerHTML = `<div class="docwin app">
     <div class="menubar"></div>
     <div class="toolbar"></div>
     <div class="hdrs"></div>
     <div class="main"><div class="thumbs"></div><div class="center"></div><div class="side"></div><div class="rtabs"></div></div>
     <div class="statusbar"><span class="sel"></span><span class="right"><span class="kbd caps">CAPS</span><span class="kbd num">NUM</span><span class="kbd scrl">SCRL</span></span></div></div>`;
-  const root = $('.docwin');
-  const post = (m) => channel?.postMessage(m);
+  const root = container.querySelector('.docwin');
+  const post = (m) => { channel?.postMessage(m); if (m.type === 'docChanged') onChanged?.(m.ids); };
 
   async function load(open = false) {
     try {
       W.doc = await api('getDocument', { id: W.id, open });
     } catch (e) {
       root.innerHTML = `<div class="msg" style="padding:20px">${icon('cross', 24)}<div>${esc(e.message)}</div></div>`;
-      document.title = 'EBA DMS';
+      document.title = BRAND.name;
       return false;
     }
     W.dirty = false;
@@ -93,8 +96,8 @@ export async function mountDocWindow(app, docId, { channel }) {
         { label: 'Izvoz', icon: 'export', action: () => act.exportDocs(appProxy, [W.doc]) },
         { label: 'Izvozi datoteko z bližnjico', action: () => act.exportDocs(appProxy, [W.doc], true) },
         { label: 'PDF', icon: 'pdf', disabled: !isPdf, title: isPdf ? '' : 'Trenutna stran ni PDF.', items: () => [
-          { label: 'Odpri PDF v novem oknu', action: () => window.open(blobUrl(curPage.blobId), '_blank') },
-          { label: 'Shrani PDF', action: () => { location.href = `${blobUrl(curPage.blobId)}?download=1`; } },
+          { label: 'Odpri PDF v novem oknu', action: () => (isStandalone() ? downloadBlob(curPage.blobId) : window.open(blobUrl(curPage.blobId), '_blank')) },
+          { label: 'Shrani PDF', action: () => downloadBlob(curPage.blobId) },
         ] },
         { label: 'Ogled podatkov', icon: 'columns', action: () => { W.center = 'data'; renderCenter(); } },
         { sep: true },
@@ -122,7 +125,7 @@ export async function mountDocWindow(app, docId, { channel }) {
       ] },
       { label: 'Akcije', mnemonic: 'K', items: () => actionsMenu() },
       { label: 'Okno', mnemonic: 'K', items: () => [
-        { label: 'EBA DMS (glavno okno)', action: () => { post({ type: 'focusMain' }); try { window.opener?.focus(); } catch { /* ignore */ } } },
+        { label: `${BRAND.name} (glavno okno)`, action: () => { if (host) { closeWindow(); return; } post({ type: 'focusMain' }); try { window.opener?.focus(); } catch { /* ignore */ } } },
         { label: document.title, checked: true, action: () => window.focus() },
       ] },
     ];
@@ -227,7 +230,7 @@ export async function mountDocWindow(app, docId, { channel }) {
       <span class="lab" style="grid-column: 3">Klas. št.:</span><input class="win" readonly value="${esc(d.classification || '')}" title="${esc(d.classification || '')}">`;
     h.querySelector('.hs').addEventListener('input', markDirty);
     h.querySelector('.hp').addEventListener('input', markDirty);
-    h.querySelector('.fn').addEventListener('click', () => { const p = W.doc.pages[0]; if (p) location.href = `${blobUrl(p.blobId)}?download=1`; });
+    h.querySelector('.fn').addEventListener('click', () => { const p = W.doc.pages[0]; if (p) downloadBlob(p.blobId); });
   }
 
   function renderThumbs() {
@@ -269,14 +272,16 @@ export async function mountDocWindow(app, docId, { channel }) {
     const z = zoomFactor(canvas);
     const w = Math.round(794 * z), h = Math.round(794 * z * 842 / 595);
     const ruler = W.ruler ? '<div class="ruler-h"></div>' : '';
-    if (p.mime === 'application/pdf') {
+    if (p.mime === 'application/pdf' && isStandalone()) {
+      canvas.innerHTML = `${ruler}<div class="page" style="width:${w}px;padding:30px">${icon('pdf', 40)}<p>${esc(p.name)}</p><p class="demo-note">Predogled PDF v tem predogledu ni na voljo. V lokalni različici se PDF prikaže v pregledovalniku brskalnika.</p></div>`;
+    } else if (p.mime === 'application/pdf') {
       canvas.innerHTML = `${ruler}<div class="page" style="width:${w}px;height:${Math.max(h, canvas.clientHeight - 30)}px"><iframe class="pdf" src="${blobUrl(p.blobId)}" title="PDF"></iframe></div>`;
     } else if (p.mime?.startsWith('image/')) {
       const hl = W.highlight && W.highlight.page === W.page ? `<div style="position:absolute;border:2px solid #e100c8;background:rgba(225,0,200,.08);left:${W.highlight.x / 595 * 100}%;top:${W.highlight.y / 842 * 100}%;width:${W.highlight.w / 595 * 100}%;height:${W.highlight.h / 842 * 100}%"></div>` : '';
       canvas.innerHTML = `${ruler}<div class="page" style="width:${w}px;${p.mime.includes('svg') ? `height:${h}px` : ''}"><img src="${blobUrl(p.blobId)}" alt="${esc(p.name)}" draggable="false">${hl}</div>`;
     } else {
       canvas.innerHTML = `${ruler}<div class="page" style="width:${w}px;padding:30px">${icon('attach', 32)}<p>${esc(p.name)}</p><p class="demo-note">Predogled za to vrsto datoteke ni na voljo.</p><button class="btn dl">Prenesi</button></div>`;
-      canvas.querySelector('.dl').onclick = () => { location.href = `${blobUrl(p.blobId)}?download=1`; };
+      canvas.querySelector('.dl').onclick = () => downloadBlob(p.blobId);
     }
     if (W.highlight) setTimeout(() => canvas.querySelector('.page > div[style*="e100c8"]')?.scrollIntoView({ block: 'center' }), 50);
   }
@@ -436,12 +441,12 @@ export async function mountDocWindow(app, docId, { channel }) {
       const r = await api('linkDocuments', { id: W.id, targetIds: app.clipboard }).catch((e) => alertBox(e.message, { kind: 'error' }));
       if (r) { toast(`Povezanih dokumentov: ${r.linked}`); appProxy.changed([W.id]); }
     });
-    sc.querySelector('.ll').addEventListener('dblclick', (e) => { const n = e.target.closest('[data-id]'); if (n) window.open(`/#/doc/${n.dataset.id}`, `eba_doc_${n.dataset.id}`, `popup,width=${screen.availWidth},height=${screen.availHeight}`); });
+    sc.querySelector('.ll').addEventListener('dblclick', (e) => { const n = e.target.closest('[data-id]'); if (n) openLinked(n.dataset.id); });
     sc.querySelector('.ll').addEventListener('contextmenu', (e) => {
       const n = e.target.closest('[data-id]');
       if (!n) return;
       contextMenu(e, [
-        { label: 'Odpri', bold: true, action: () => window.open(`/#/doc/${n.dataset.id}`, `eba_doc_${n.dataset.id}`, 'popup') },
+        { label: 'Odpri', bold: true, action: () => openLinked(n.dataset.id) },
         { label: 'Odstrani povezavo', disabled: !allowed().save, action: async () => { await api('unlinkDocument', { id: W.id, targetId: n.dataset.id }).catch((er) => alertBox(er.message)); appProxy.changed([W.id]); } },
       ]);
     });
@@ -475,7 +480,7 @@ export async function mountDocWindow(app, docId, { channel }) {
     sc.querySelector('tbody').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-n]'); if (tr) { W.versionSel = +tr.dataset.n; panelVersions(sc); } });
     sc.querySelector('.vs').addEventListener('click', () => {
       const v = d.versions.find((x) => x.n === W.versionSel);
-      sc.querySelector('.vinfo').innerHTML = `<b>Verzija ${v.n}</b> – ${v.snapshot.pages.length} strani, ${v.snapshot.attachments.length} priponk<br>${[...v.snapshot.pages, ...v.snapshot.attachments].map((p) => `<a class="lnk" href="${blobUrl(p.blobId)}" target="_blank">${esc(p.name)}</a>`).join('<br>')}`;
+      sc.querySelector('.vinfo').innerHTML = `<b>Verzija ${v.n}</b> – ${v.snapshot.pages.length} strani, ${v.snapshot.attachments.length} priponk<br><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${[...v.snapshot.pages, ...v.snapshot.attachments].map((p) => `<div style="width:84px;text-align:center;font-size:11px">${p.mime?.startsWith('image/') ? `<img src="${blobUrl(p.blobId)}" alt="" style="width:84px;border:1px solid #bbb;background:#fff">` : icon('attach', 24)}<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.name)}">${esc(p.name)}</div></div>`).join('')}</div>`;
     });
     sc.querySelector('.vr').addEventListener('click', async () => {
       if (!await confirmBox(`Obnovim verzijo ${W.versionSel}? Trenutna vsebina se ohrani kot nova verzija.`)) return;
@@ -526,7 +531,7 @@ export async function mountDocWindow(app, docId, { channel }) {
     } catch (e) { await alertBox(e.message, { kind: 'error' }); return false; }
   }
   async function confirmDiscard() {
-    const r = await dialog({ title: 'EBA DMS', help: false, body: `<div class="msg">${icon('help', 24)}<div>Dokument ima neshranjene spremembe. Ali jih želite shraniti?</div></div>`,
+    const r = await dialog({ title: BRAND.name, help: false, body: `<div class="msg">${icon('help', 24)}<div>Dokument ima neshranjene spremembe. Ali jih želite shraniti?</div></div>`,
       buttons: [{ label: 'Da', primary: true, value: 'yes' }, { label: 'Ne', value: 'no' }, { label: 'Prekliči', value: null }], closeValue: null });
     if (r === 'yes') return save();
     if (r === 'no') { W.dirty = false; return true; }
@@ -576,6 +581,7 @@ export async function mountDocWindow(app, docId, { channel }) {
 
   // ----------------------------------------------------------- misc commands
   async function printDoc() {
+    if (!canPrint()) return noPrint();
     const own = W.doc.pages.filter((p) => p.mime.startsWith('image/'));
     const area = el(`<div class="print-area">${own.map((p) => `<img src="${blobUrl(p.blobId)}" style="width:100%;page-break-after:always">`).join('')}</div>`);
     document.body.appendChild(area);
@@ -609,9 +615,19 @@ export async function mountDocWindow(app, docId, { channel }) {
   }
   function fullscreen() { if (document.fullscreenElement) document.exitFullscreen(); else root.requestFullscreen?.(); }
   function toggleDetails() { W.details = !W.details; renderSide(); }
+  function openLinked(id) {
+    if (host) return app.openDocument({ id });
+    window.open(`/#/doc/${id}`, `eba_doc_${id}`, `popup,width=${screen.availWidth},height=${screen.availHeight}`);
+  }
   async function closeWindow() {
     if (W.dirty && !(await confirmDiscard())) return;
     post({ type: 'windowClosed', id: W.id });
+    if (host) {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      onClose?.();
+      return;
+    }
     window.close();
     setTimeout(() => { if (!window.closed) { location.hash = ''; location.reload(); } }, 150);
   }
@@ -624,12 +640,12 @@ export async function mountDocWindow(app, docId, { channel }) {
     if (W.dirty && !(await confirmDiscard())) return;
     post({ type: 'windowClosed', id: W.id });
     W.id = list[j]; W.page = 0; W.highlight = null; W.versionSel = null;
-    history.replaceState(null, '', `#/doc/${W.id}`);
+    if (!host) history.replaceState(null, '', `#/doc/${W.id}`);
     load(true);
   }
 
   // ----------------------------------------------------------- keyboard
-  document.addEventListener('keydown', (e) => {
+  function onKey(e) {
     if (menusOpen()) { if (menuKeydown(e)) { e.preventDefault(); e.stopPropagation(); } return; }
     if (dialogsOpen()) return;
     if (e.altKey && e.key.length === 1) { if (W.menubar?.mnemonic(e.key)) e.preventDefault(); return; }
@@ -655,13 +671,16 @@ export async function mountDocWindow(app, docId, { channel }) {
     else if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
     else h = false;
     if (h) e.preventDefault();
-  });
-  window.addEventListener('beforeunload', (e) => { post({ type: 'windowClosed', id: W.id }); if (W.dirty) { e.preventDefault(); e.returnValue = ''; } });
-  window.addEventListener('resize', () => { if (W.doc && W.center === 'image') renderCenter(); });
+  }
+  function onResize() { if (W.doc && W.center === 'image') renderCenter(); }
+  document.addEventListener('keydown', onKey);
+  window.addEventListener('resize', onResize);
+  if (!host) window.addEventListener('beforeunload', (e) => { post({ type: 'windowClosed', id: W.id }); if (W.dirty) { e.preventDefault(); e.returnValue = ''; } });
   channel?.addEventListener('message', (e) => {
     if (e.data?.type === 'docChanged' && e.data.ids?.includes(W.id) && !W.dirty) load(false);
     if (e.data?.type === 'logout') location.reload();
   });
+  W.close = closeWindow;
   await load(true);
   return W;
 }

@@ -7,6 +7,8 @@ import { toDate, isoLocal } from '../core/format.js';
 import { renderInvoicePage } from '../core/page-svg.js';
 import { can, inOffice } from './access.js';
 import { makeInvoiceSpec } from './demo-data.js';
+import { toBytes } from '../core/bytes.js';
+import { BRAND } from '../core/brand.js';
 
 const DEMO = 'demo';
 
@@ -19,8 +21,8 @@ export const exchange = {
       if (doc.deleted || doc.direction !== 'out' || doc.dispatch?.state !== 'queued') continue;
       if (!companyIds.includes(doc.companyId)) continue;
       if (!can(svc.s, user, doc.companyId, doc.category, 'dispatch') || !inOffice(svc.s, user, doc, now)) continue;
-      doc.dispatch = { state: 'sent', at: now, adapter: 'EBA Exchange (demo)' };
-      svc.event(doc, 'Poslan', user, { detail: 'EBA Exchange (demo adapter): dokument ni bil dejansko poslan.' });
+      doc.dispatch = { state: 'sent', at: now, adapter: `${BRAND.exchange} (demo)` };
+      svc.event(doc, 'Poslan', user, { detail: `${BRAND.exchange} (demo adapter): dokument ni bil dejansko poslan.` });
       sent++;
     }
     let received = 0;
@@ -36,7 +38,7 @@ export const exchange = {
         const partner = partners[seed % partners.length];
         const spec = makeInvoiceSpec(seed, partner, company, toDate(now));
         const { svg, values, regions } = renderInvoicePage(spec);
-        const blob = svc.store.putBlob(Buffer.from(svg), { mime: 'image/svg+xml', name: `eracun_${seed}.svg`, owner: { type: 'batch', id: batch.id } });
+        const blob = svc.store.putBlob(toBytes(svg), { mime: 'image/svg+xml', name: `eracun_${seed}.svg`, owner: { type: 'batch', id: batch.id } });
         batch.docs.push(intakeFromValues(svc, blob, partner, values, regions, now, 'Moj-eRačun Plugin'));
       }
       svc.s.batches.push(batch);

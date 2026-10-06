@@ -1,6 +1,7 @@
 // Application bootstrap: login, main shell (menus, modules, toolbar, rail,
 // status bar), module switching and document windows.
-import { api, esc, el, toast, download, pickFiles, setUnauthorizedHandler, installTooltips, $ } from './ui/core.js';
+import { api, esc, el, toast, download, pickFiles, setUnauthorizedHandler, installTooltips, isStandalone, canPrint, noPrint, $ } from './ui/core.js';
+import { BRAND } from '/core/brand.js';
 import { MenuBar, openMenu, contextMenu, menuKeydown, menusOpen, closeMenus } from './ui/menu.js';
 import { dialog, alertBox, dialogsOpen } from './ui/dialog.js';
 import { icon, large } from './ui/icons.js';
@@ -14,7 +15,7 @@ const channel = 'BroadcastChannel' in window ? new BroadcastChannel('eba-dms') :
 const app = {
   me: null, personal: null, companyId: null, module: 'docs', docView: 'office', scanView: 'process',
   office: { scope: 'live', folderId: 'in/racun', sorts: {}, filters: {}, collapsed: new Set() },
-  clipboard: JSON.parse(sessionStorage.getItem('eba-clipboard') || '[]'),
+  clipboard: (() => { try { return JSON.parse(sessionStorage.getItem('eba-clipboard') || '[]'); } catch { return []; } })(),
   view: null, grid: null, selection: [], listInfo: { shown: 0, total: 0, limited: false }, windows: new Map(),
   saveClipboard() { try { sessionStorage.setItem('eba-clipboard', JSON.stringify(this.clipboard)); } catch { /* ignore */ } },
   async savePersonal(patch) { this.personal = await api('savePersonal', patch); return this.personal; },
@@ -23,21 +24,29 @@ const app = {
 };
 window.ebaApp = app; // for diagnostics in the console
 
+// The app renders into its own root so the page's <style>/<script> (which sit
+// in <body> in the published build) are never replaced.
+function rootEl() {
+  let r = document.getElementById('dms-root');
+  if (!r) { r = document.createElement('div'); r.id = 'dms-root'; document.body.appendChild(r); }
+  return r;
+}
+
 // ============================================================= login
 function showLogin(message = '') {
-  document.body.innerHTML = '';
+  rootEl().innerHTML = '';
   const w = el(`<div class="login"><div class="dlg">
-    <div class="tbar"><span class="t">EBA DMS – Prijava</span></div>
+    <div class="tbar"><span class="t">${BRAND.name} – Prijava</span></div>
     <div class="dbody"><div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
-      <div class="about" style="padding:0;width:auto;background:none"><div class="emb" style="width:54px;height:54px;font-size:18px;margin:0">eba</div></div>
-      <div><b style="font-size:15px">EBA DMS</b><div class="demo-note">Demo rekreacija · fiktivni podatki</div></div></div>
+      <div class="about" style="padding:0;width:auto;background:none"><div class="emb" style="width:54px;height:54px;font-size:18px;margin:0">${BRAND.mark}</div></div>
+      <div><b style="font-size:15px">${BRAND.name}</b><div class="demo-note">Demo rekreacija · fiktivni podatki${isStandalone() ? ' · stanje se hrani v tem brskalniku' : ''}</div></div></div>
       <div class="form"><label class="r">Uporabniško ime:</label><input class="win u" autofocus autocomplete="username">
       <label class="r">Geslo:</label><input class="win p" type="password" autocomplete="current-password"></div>
       <div class="err" style="min-height:16px;margin-top:6px">${esc(message)}</div>
       <div class="demo-note">Demo uporabniki (geslo <b>demo</b>): mnovak – računovodstvo, jkovac – direktorica, bzorko – vodja financ,
       pzupan – analitik, tkrajnc – zunanji računovodja, ahorvat – upravnik, lmlakar – JAVOR MG.</div></div>
     <div class="dfoot"><button class="btn primary go">${icon('key')}Prijava</button></div></div></div>`);
-  document.body.appendChild(w);
+  rootEl().appendChild(w);
   const go = async () => {
     try {
       await api('login', { username: w.querySelector('.u').value, password: w.querySelector('.p').value });
@@ -61,7 +70,7 @@ async function start() {
   try { app.me = await api('whoami'); } catch (e) { if (e.status === 401) return showLogin(); throw e; }
   app.personal = app.me.personal;
   app.companyId = app.me.defaultCompanyId;
-  if (location.hash.startsWith('#/doc/')) {
+  if (!isStandalone() && location.hash.startsWith('#/doc/')) {
     const { mountDocWindow } = await import('./views/docwin.js');
     return mountDocWindow(app, location.hash.slice(6), { channel });
   }
@@ -69,10 +78,10 @@ async function start() {
 }
 
 const companyName = () => app.companyId === 'all' ? 'Vsa podjetja' : app.me.companies.find((c) => c.id === app.companyId)?.name;
-function windowTitle() { return `EBA DMS - ${companyName()} [${app.me.user.name}] • Internal Authentication`; }
+function windowTitle() { return `${BRAND.name} - ${companyName()} [${app.me.user.name}] • Internal Authentication`; }
 
 function renderShell() {
-  document.body.innerHTML = `<div class="app">
+  rootEl().innerHTML = `<div class="app">
     <div class="menubar"></div>
     <div class="modstrip"></div>
     <div class="toolbar"></div>
@@ -80,7 +89,7 @@ function renderShell() {
     <div class="statusbar"><span class="sel"></span><span class="right"><span class="cnt"></span><span class="led" title="Povezava s strežnikom"></span><span class="led" title="Sinhronizacija (lokalno)"></span><span class="clock"></span>
       <span class="kbd caps">CAPS</span><span class="kbd num">NUM</span><span class="kbd scrl">SCRL</span></span></div></div>`;
   document.title = windowTitle();
-  app.menubar = new MenuBar($('.menubar'), mainMenus(), { brand: '<span class="wordmark">eba</span>' });
+  app.menubar = new MenuBar($('.menubar'), mainMenus(), { brand: `<span class="wordmark">${BRAND.mark}</span>` });
   renderModstrip();
   bindSplitter();
   switchModule(app.module);
@@ -110,7 +119,7 @@ function bindSplitter() {
 async function switchModule(m) {
   app.module = m;
   renderModstrip();
-  app.menubar = new MenuBar($('.menubar'), mainMenus(), { brand: '<span class="wordmark">eba</span>' });
+  app.menubar = new MenuBar($('.menubar'), mainMenus(), { brand: `<span class="wordmark">${BRAND.mark}</span>` });
   await mountView();
 }
 
@@ -234,14 +243,30 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ------------------------------------------------------------- open documents
-app.openDocument = (row) => {
+app.openDocument = async (row) => {
   if (!row) return;
+  if (isStandalone()) return openOverlay(row.id);
   try { localStorage.setItem('eba-nav', JSON.stringify((app.grid?.visibleRows() || []).map((r) => r.id))); } catch { /* ignore */ }
   const w = window.open(`/#/doc/${row.id}`, `eba_doc_${row.id}`, `popup,width=${screen.availWidth},height=${screen.availHeight},left=0,top=0`);
   if (!w) { location.hash = `#/doc/${row.id}`; location.reload(); return; }
   app.windows.set(row.id, { win: w, title: row.subject });
   w.focus();
 };
+// Standalone build: document windows open inside the page.
+async function openOverlay(id) {
+  try { localStorage.setItem('eba-nav', JSON.stringify((app.grid?.visibleRows() || []).map((r) => r.id))); } catch { /* ignore */ }
+  app.overlay?.close();
+  const { mountDocWindow } = await import('./views/docwin.js');
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const prevTitle = document.title;
+  app.overlay = await mountDocWindow(app, id, {
+    channel: null, host,
+    onChanged: () => app.view?.refresh(),
+    onClose: () => { host.remove(); app.overlay = null; document.title = prevTitle; app.menubar?.activate(); app.view?.focus?.(); },
+  });
+}
+
 channel?.addEventListener('message', (e) => {
   const m = e.data || {};
   if (m.type === 'docChanged') app.view?.refresh();
@@ -361,9 +386,10 @@ function mainMenus() {
   );
   if (scanner) menus.push({ label: 'Obdelava', disabled: () => app.scanView !== 'process', items: () => app.view?.processMenu?.() || [] });
   menus.push({ label: 'Pomoč', mnemonic: 'P', items: () => [
-    { label: 'EBA DMS navodila', icon: 'help', shortcut: 'F1', action: () => helpDialog() },
+    { label: `${BRAND.name} navodila`, icon: 'help', shortcut: 'F1', action: () => helpDialog() },
     { label: 'Jezik', items: [{ label: 'Slovenščina', checked: true, action: () => {} }, { label: 'English', disabled: true, title: 'Prevod ni na voljo v demo rekreaciji.' }] },
     { sep: true },
+    ...(isStandalone() ? [{ label: 'Ponastavi demo podatke', action: () => resetDemo() }] : []),
     { label: 'O programu', icon: 'info', action: () => aboutDialog() },
   ] });
   return menus;
@@ -375,6 +401,13 @@ function windowMenu() {
     { label: windowTitle(), checked: true, action: () => window.focus() },
     ...[...app.windows.entries()].map(([id, w]) => ({ label: w.title, action: () => { if (!w.win.closed) w.win.focus(); } })),
   ];
+}
+
+async function resetDemo() {
+  const { confirmBox } = await import('./ui/dialog.js');
+  if (!await confirmBox('Ponastavim vse demo podatke na začetno stanje? Vse spremembe v tem brskalniku bodo izgubljene.')) return;
+  await window.__DMS_LOCAL__.reset();
+  showLogin('Demo podatki so ponastavljeni. Prijavite se ponovno.');
 }
 
 async function pantheonSync(what) {
@@ -401,6 +434,7 @@ function copyList() {
   navigator.clipboard?.writeText(text).then(() => toast(`Seznam (${app.grid.visibleRows().length} vrstic) je kopiran v odložišče.`), () => download('seznam.tsv', text));
 }
 function printList() {
+  if (!canPrint()) return noPrint();
   const area = el(`<div class="print-area">${app.grid.toPrintHtml(`${companyName()} – seznam dokumentov`)}</div>`);
   document.body.appendChild(area);
   window.print();
@@ -411,24 +445,24 @@ async function exitApp() {
   channel?.postMessage({ type: 'logout' });
   for (const [, w] of app.windows) try { w.win.close(); } catch { /* ignore */ }
   window.close();
-  document.body.innerHTML = '<div class="login"><div class="dlg"><div class="tbar"><span class="t">EBA DMS</span></div><div class="dbody">Program je zaprt. To okno lahko zaprete.</div><div class="dfoot"><button class="btn primary" onclick="location.reload()">Ponovno zaženi</button></div></div></div>';
+  rootEl().innerHTML = '<div class="login"><div class="dlg"><div class="tbar"><span class="t">' + BRAND.name + '</span></div><div class="dbody">Program je zaprt. To okno lahko zaprete.</div><div class="dfoot"><button class="btn primary" onclick="location.reload()">Ponovno zaženi</button></div></div></div>';
 }
 function helpDialog() {
-  return dialog({ title: 'EBA DMS navodila', width: 640, body: `<div class="selectable" style="line-height:1.5">
+  return dialog({ title: `${BRAND.name} navodila`, width: 640, body: `<div class="selectable" style="line-height:1.5">
     <b>Moduli</b><br>• <b>Dokumenti › Pisarna</b> – mape VHODNI/IZHODNI, obseg (spodaj levo), dvoklik odpre dokument v novem oknu.<br>
     • <b>Iskanje</b> – pogoji levo (zelen + doda alternativo za isto polje), <i>Išči</i> spodaj desno.<br>
     • <b>Skrbništvo</b> – pregled dokumentov po pisarnah (za vloge s skrbništvom).<br>
     • <b>Skenirnica</b> – Obdelava (skeniraj/uvozi, polja, pošlji uporabnikom), Paketi (globalna skenirnica), Dnevnik.<br><br>
     <b>Potek računa</b>: prejem → direktorica <i>Prevzemi</i> in <i>Parafiraj (Potrdi)</i> → pravilo posreduje v računovodstvo (zunanji status 0 → 1).<br><br>
     <b>Bližnjice</b>: Del, Ctrl+C, Ctrl+Shift+C, Ctrl+D, Ctrl+V, Ctrl+K, Ctrl+P, Ctrl+Q, F1, Alt+črka za menije.<br><br>
-    <span class="demo-note">Integracije (EBA Exchange, Moj-eRačun, AS2, IMAP, Microsoft Exchange, Pantheon, e-pošta, skener, OCR, register) so demo adapterji,
-    ki ne kličejo zunanjih storitev. Podpisi so demo zapisi brez kriptografske veljavnosti. Podrobnosti: README.md.</span></div>`,
+    <span class="demo-note">Integracije (${BRAND.exchange}, Moj-eRačun, AS2, IMAP, Microsoft Exchange, Pantheon, e-pošta, skener, OCR, register) so demo adapterji,
+    ki ne kličejo zunanjih storitev. Podpisi so demo zapisi brez kriptografske veljavnosti. ${isStandalone() ? 'Ta predogled teče v brskalniku: stanje se hrani le v vašem brskalniku, prenosi datotek in tiskanje niso na voljo. Ponastavitev: Pomoč › Ponastavi demo podatke.' : 'Podrobnosti: README.md.'}</span></div>`,
     buttons: [{ label: 'Zapri', primary: true }] });
 }
 
 // ============================================================= keyboard
 document.addEventListener('keydown', (e) => {
-  if (!app.me || location.hash.startsWith('#/doc/')) return;
+  if (!app.me || app.overlay || (!isStandalone() && location.hash.startsWith('#/doc/'))) return;
   if (menusOpen()) { if (menuKeydown(e)) { e.preventDefault(); e.stopPropagation(); } return; }
   if (dialogsOpen()) return;
   if (e.key === 'Alt') { document.body.classList.add('alt'); return; }
@@ -456,5 +490,5 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => { if (e.key === 'Alt') document.body.classList.remove('alt'); });
 
 installTooltips();
-start().catch((e) => { document.body.textContent = 'Napaka pri zagonu: ' + e.message; });
+start().catch((e) => { rootEl().textContent = 'Napaka pri zagonu: ' + e.message; });
 export default app;

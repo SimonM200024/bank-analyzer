@@ -3,6 +3,7 @@ import { api, esc, toast } from './ui/core.js';
 import { dialog, alertBox, showError } from './ui/dialog.js';
 import { icon } from './ui/icons.js';
 import { CLASSIFICATION, allColumns, categoryLabel } from '/core/schema.js';
+import { BRAND } from '/core/brand.js';
 
 // Holder picker (users and roles of a company). Returns array of "user:x"/"role:y".
 export async function pickHolders(app, companyId, { title = 'Posreduj', multi = true, usersOnly = false, notifyDefault = null, withNote = false, okLabel = 'V redu', preselect = [], extraHtml = '' } = {}) {
@@ -121,12 +122,12 @@ export async function columnsDialog(category, current) {
 export function aboutDialog() {
   return dialog({
     title: 'O programu', help: false, dim: true,
-    body: `<div class="about"><div class="emb">eba</div><h1>EBA DMS</h1>
-      <div>Demo rekreacija · verzija 0.1 (lokalna)</div>
-      <div style="margin:8px 0">Uporabniški vmesnik po vzoru namizne aplikacije EBA DMS 4.1.<br>Vsi podatki so fiktivni. Integracije, podpisi in skeniranje so simulirani.</div>
-      <div class="demo-note">Neodvisna demo rekreacija za interno predstavitev; ni izdelek ali last EBA, d.o.o.</div>
-      <div style="margin-top:6px"><span class="lnk" data-readme>README.md</span></div></div>`,
-    onOpen: (d) => d.q('[data-readme]').addEventListener('click', () => window.open('/README.md', '_blank')),
+    body: `<div class="about"><div class="emb">${BRAND.mark}</div><h1>${BRAND.name}</h1>
+      <div>Demo rekreacija · verzija 0.1${BRAND.neutral ? ' (predogled v brskalniku)' : ' (lokalna)'}</div>
+      <div style="margin:8px 0">${BRAND.about}<br>Vsi podatki so fiktivni. Integracije, podpisi in skeniranje so simulirani.</div>
+      <div class="demo-note">${BRAND.disclaimer}</div>
+      ${BRAND.neutral ? '' : '<div style="margin-top:6px"><span class="lnk" data-readme>README.md</span></div>'}</div>`,
+    onOpen: (d) => d.q('[data-readme]')?.addEventListener('click', () => window.open('/README.md', '_blank')),
     buttons: [{ label: 'Zapri', primary: true }],
   });
 }
@@ -152,7 +153,7 @@ export async function lockScreen(app) {
   }).then((v) => { if (v !== true) return lockScreen(app); return v; });
 }
 
-export async function infoResult(res, title = 'EBA DMS') {
+export async function infoResult(res, title = BRAND.name) {
   if (res?.message) await alertBox(res.message, { title });
 }
 

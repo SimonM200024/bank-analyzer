@@ -1,5 +1,5 @@
 // Skenirnica: Obdelava (processing), Paketi (global batches), Dnevnik (intake log).
-import { api, esc, el, toast, upload, pickFiles, download, blobUrl } from '../ui/core.js';
+import { api, esc, el, toast, upload, pickFiles, download, blobUrl, downloadBlob, isStandalone, canPrint, noPrint } from '../ui/core.js';
 import { openMenu } from '../ui/menu.js';
 import { dialog, alertBox, confirmBox, promptBox } from '../ui/dialog.js';
 import { icon } from '../ui/icons.js';
@@ -121,7 +121,8 @@ export function mountScanner(app, pane, content, toolbar) {
       const strip = d.pages.length > 1 ? `<div style="display:flex;gap:6px;padding:4px;background:#eef1f5;border-bottom:1px solid #ccd">${d.pages.map((pg, i) => `<div class="pg${i === st.page ? ' sel' : ''}" data-p="${i}" style="width:42px;height:58px;border:2px solid ${i === st.page ? '#3d8ee6' : '#ccc'};background:#fff">${pg.mime.startsWith('image/') ? `<img src="${blobUrl(pg.blobId)}" style="width:100%;height:100%;object-fit:contain">` : icon('pdf', 30)}</div>`).join('')}</div>` : '';
       let img = '<div style="padding:30px;color:#666">Dokument brez slike.</div>';
       if (p) {
-        if (p.mime === 'application/pdf') img = `<iframe src="${blobUrl(p.blobId)}" style="width:100%;height:100%;border:0"></iframe>`;
+        if (p.mime === 'application/pdf' && isStandalone()) img = `<div style="padding:30px;color:#fff">${esc(p.name)} – predogled PDF v tem predogledu ni na voljo.</div>`;
+        else if (p.mime === 'application/pdf') img = `<iframe src="${blobUrl(p.blobId)}" style="width:100%;height:100%;border:0"></iframe>`;
         else if (p.mime.startsWith('image/')) img = `<img src="${blobUrl(p.blobId)}" style="${st.fit === 'height' ? 'height:calc(100% - 16px);width:auto' : 'width:calc(100% - 16px);height:auto'};margin:8px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">`;
         else img = `<div style="padding:30px">${esc(p.name)} – predogled ni na voljo.</div>`;
       }
@@ -242,7 +243,7 @@ export function mountScanner(app, pane, content, toolbar) {
         if (!await confirmBox('Izbrišem izbrani dokument iz paketa?')) return;
         try { const r = await api('deleteIntake', { batchId: batch.id, docId: d.id }); st.docId = null; reloadBatch(r.batch); } catch (e) { app.error(e); }
       },
-      exportImages() { const d = curDoc(); if (!d) return; d.pages.forEach((p, i) => setTimeout(() => { const a = document.createElement('a'); a.href = `${blobUrl(p.blobId)}?download=1`; a.download = p.name; document.body.appendChild(a); a.click(); a.remove(); }, i * 300)); },
+      exportImages() { const d = curDoc(); if (!d) return; if (isStandalone()) return downloadBlob(d.pages[0]?.blobId); d.pages.forEach((p, i) => setTimeout(() => { const a = document.createElement('a'); a.href = `${blobUrl(p.blobId)}?download=1`; a.download = p.name; document.body.appendChild(a); a.click(); a.remove(); }, i * 300)); },
       async teach() {
         const d = curDoc();
         const name = await promptBox('Ime predloge:', `Predloga: ${d.sender || ''}`, { title: 'Uči predlogo' });
@@ -500,6 +501,7 @@ export function mountScanner(app, pane, content, toolbar) {
 }
 
 function printHtml(html) {
+  if (!canPrint()) return noPrint();
   const area = el(`<div class="print-area">${html}</div>`);
   document.body.appendChild(area);
   window.print();

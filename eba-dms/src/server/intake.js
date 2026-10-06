@@ -7,6 +7,8 @@ import { AccessError, flag, userCompanies } from './access.js';
 import { hexId, ValidationError, validateHolder, takeUploadedBlob, extractFromPage, Service } from './service.js';
 import { holderShort } from './access.js';
 import { makeInvoiceSpec } from './demo-data.js';
+import { toBytes } from '../core/bytes.js';
+import { BRAND } from '../core/brand.js';
 
 const need = (c, m) => { if (!c) throw new ValidationError(m); };
 
@@ -85,7 +87,7 @@ export function demoScanPage(svc, user, companyId, { colour, rngSeed } = {}) {
   const spec = makeInvoiceSpec(seed, partner, svc.company(companyId), toDate(svc.now()));
   spec.grey = !colour;
   const { svg } = renderInvoicePage(spec);
-  const blob = svc.store.putBlob(Buffer.from(svg), { mime: 'image/svg+xml', name: `sken_${String(seed).padStart(5, '0')}.svg`, owner: { type: 'batch' } });
+  const blob = svc.store.putBlob(toBytes(svg), { mime: 'image/svg+xml', name: `sken_${String(seed).padStart(5, '0')}.svg`, owner: { type: 'batch' } });
   return { blob, partner, spec };
 }
 
@@ -385,14 +387,14 @@ export function dispatchOne(svc, user, b, d, targets) {
     createdAt: at, sentAt: doc.sentAt, receivedAt: doc.receivedAt, direction: d.direction === 'out' ? 'Poslana pošta' : d.direction === 'internal' ? 'Interna pošta' : 'Prejeta pošta',
   });
   doc.protocol = entry.protocol;
-  doc.barcode = `EBA${String(entry.seq).padStart(8, '0')}`;
+  doc.barcode = `${BRAND.barcode}${String(entry.seq).padStart(8, '0')}`;
   return doc;
 }
 
 // Synthetic attachment page for multi-page fixtures.
 export function attachmentBlob(svc, title, seed, grey) {
   const { svg } = renderAttachmentPage({ title, seed, grey });
-  return svc.store.putBlob(Buffer.from(svg), { mime: 'image/svg+xml', name: `priloga_${seed}.svg`, owner: { type: 'batch' } });
+  return svc.store.putBlob(toBytes(svg), { mime: 'image/svg+xml', name: `priloga_${seed}.svg`, owner: { type: 'batch' } });
 }
 
 export { Service, isoLocal };

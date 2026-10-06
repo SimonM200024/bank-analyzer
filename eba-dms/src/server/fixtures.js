@@ -8,6 +8,8 @@ import { renderInvoicePage, renderContractPage } from '../core/page-svg.js';
 import { Service, API, hashPassword, hexId } from './service.js';
 import { dispatchOne, attachmentBlob } from './intake.js';
 import { intakeFromValues } from './adapters.js';
+import { toBytes } from '../core/bytes.js';
+import { BRAND } from '../core/brand.js';
 import { COMPANIES, SUPPLIERS, CUSTOMERS, partnerRecord, makeInvoiceSpec, rng, pickR } from './demo-data.js';
 
 const R = ['read', 'edit', 'initial', 'sign', 'forward', 'reject', 'dispatch', 'archive', 'delete', 'classify', 'grant', 'tag', 'pantheon'];
@@ -82,7 +84,7 @@ export function baseState(now) {
         useProxy: true, proxyName: 'Lokalni proxy (demo)', proxyUrl: 'http://127.0.0.1:8889', proxyPassword: 'demo-proxy-secret',
         mode: 'Samodejno', localScannerDb: '', extraVars: '', connectionId: '',
       }],
-      system: { proxyMode: 'direct', proxy: '', proxyPort: 0, proxyAuth: false, env: [{ key: 'EBA_LIST_LIMIT', value: '1000', concealed: false }], language: 'Slovenščina', logFolder: '', logLevel: '' },
+      system: { proxyMode: 'direct', proxy: '', proxyPort: 0, proxyAuth: false, env: [{ key: `${BRAND.env}_LIST_LIMIT`, value: '1000', concealed: false }], language: 'Slovenščina', logFolder: '', logLevel: '' },
     },
     integrationLog: [], outbox: [], blobs: {}, coverOverrides: {},
   };
@@ -114,13 +116,13 @@ export function buildFixtures(store, realNow = new Date()) {
       const spec = { seed, number: `P-${when.getFullYear()}/${String(Math.floor(r() * 900) + 100)}`, issuer: { ...partner, name: partner.fullName }, recipient: { ...company }, date: isoLocal(when, false),
         validFrom: isoLocal(when, false), validTo: `${when.getFullYear() + 1}-12-31`, value: Math.round(r() * 40000 + 2000), subjectText: pickR(r, ['vzdrževanje informacijske opreme', 'dobavo pisarniškega materiala', 'čiščenje prostorov', 'najem vozil', 'svetovalne storitve']) };
       const res = renderContractPage(spec);
-      blob = store.putBlob(Buffer.from(res.svg), { mime: 'image/svg+xml', name: `pogodba_${seed}.svg`, owner: { type: 'batch' } });
+      blob = store.putBlob(toBytes(res.svg), { mime: 'image/svg+xml', name: `pogodba_${seed}.svg`, owner: { type: 'batch' } });
       values = res.values; regions = res.regions;
       fieldPatch = { stevilka_pogodbe: spec.number, datum_pogodbe: spec.date, veljavnost_od: spec.validFrom, veljavnost_do: spec.validTo, vrednost_pogodbe: spec.value, ...fieldPatch };
     } else {
       const spec = makeInvoiceSpec(seed, partner, company, when, { kind, printIssueDate });
       const res = renderInvoicePage(spec);
-      blob = store.putBlob(Buffer.from(res.svg), { mime: 'image/svg+xml', name: `${kind === 'predracun' ? 'predracun' : 'racun'}_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch' } });
+      blob = store.putBlob(toBytes(res.svg), { mime: 'image/svg+xml', name: `${kind === 'predracun' ? 'predracun' : 'racun'}_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch' } });
       values = { ...res.values };
       regions = res.regions;
       if (printIssueDate === false) values.datum_racuna = spec.issueDate;
@@ -305,7 +307,7 @@ export function buildFixtures(store, realNow = new Date()) {
     spec.issuer = { name: company.name, address: company.address, postal: company.postal, city: company.city, country: company.country, vatId: company.vatId, trr: company.trr, bic: 'DEMOSI2X', bank: 'Demo banka d.d.' };
     spec.recipient = { name: cust.fullName, address: cust.address, postal: cust.postal, city: cust.city, country: cust.country, vatId: cust.vatId };
     const res = renderInvoicePage(spec);
-    const blob = store.putBlob(Buffer.from(res.svg), { mime: 'image/svg+xml', name: `izdani_${spec.number}.svg`, owner: { type: 'doc' } });
+    const blob = store.putBlob(toBytes(res.svg), { mime: 'image/svg+xml', name: `izdani_${spec.number}.svg`, owner: { type: 'doc' } });
     const doc = svc.newDocument({
       companyId: 'c1', category: 'racun', direction: 'out', subject: `Račun ${spec.number} za ${cust.shortName}`, sender: company.name,
       recipient: cust.shortName, recipientPartnerId: cust.id, source: '', filename: blob.name, authorId: 'u4', at: isoLocal(when),
@@ -353,7 +355,7 @@ export function buildFixtures(store, realNow = new Date()) {
       const partner = suppliers[Math.floor(r() * suppliers.length)];
       const spec = makeInvoiceSpec(Math.floor(r() * 1e6), partner, lipnik, when);
       const res = renderInvoicePage(spec);
-      const blob = store.putBlob(Buffer.from(res.svg), { mime: 'image/svg+xml', name: `eracun_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch', id: batch.id } });
+      const blob = store.putBlob(toBytes(res.svg), { mime: 'image/svg+xml', name: `eracun_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch', id: batch.id } });
       const intake = intakeFromValues(svc, blob, partner, res.values, res.regions, isoLocal(when), 'Moj-eRačun Plugin');
       // Received e-invoices: sender not yet confirmed ("Neznan" on the batch card).
       intake.sender = '';
@@ -375,7 +377,7 @@ export function buildFixtures(store, realNow = new Date()) {
     const partner = companyPartners(cid)[5];
     const spec = makeInvoiceSpec(777 + d, partner, svc.company(cid), when);
     const res = renderInvoicePage(spec);
-    const blob = store.putBlob(Buffer.from(res.svg), { mime: 'image/svg+xml', name: `uvoz_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch', id: b.id } });
+    const blob = store.putBlob(toBytes(res.svg), { mime: 'image/svg+xml', name: `uvoz_${spec.number.replace(/[^A-Za-z0-9-]/g, '')}.svg`, owner: { type: 'batch', id: b.id } });
     const intake = intakeFromValues(svc, blob, partner, res.values, res.regions, isoLocal(when), 'Uvoz');
     intake.subject = `Račun od ${partner.shortName}`;
     b.docs.push(intake);

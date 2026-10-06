@@ -25,7 +25,18 @@ export class ApiError extends Error {
 let onUnauthorized = () => {};
 export function setUnauthorizedHandler(fn) { onUnauthorized = fn; }
 
+// When the page runs without a server (published standalone build), the
+// in-page service registers itself here and every call is routed to it.
+const local = () => window.__DMS_LOCAL__;
+export const isStandalone = () => !!local();
+
 export async function api(op, args = {}) {
+  if (local()) {
+    try { return await local().call(op, args); } catch (e) {
+      if (e.status === 401 && op !== 'login') onUnauthorized();
+      throw new ApiError(e.message, e.status || 500);
+    }
+  }
   const res = await fetch(`/api/${op}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args), credentials: 'same-origin',
   });
@@ -37,6 +48,7 @@ export async function api(op, args = {}) {
 }
 
 export async function upload(file) {
+  if (local()) return local().upload(file);
   const res = await fetch('/api/upload', {
     method: 'POST', body: file, credentials: 'same-origin',
     headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name) },
@@ -46,7 +58,19 @@ export async function upload(file) {
   return data;
 }
 
-export const blobUrl = (id) => `/blob/${id}`;
+export const blobUrl = (id) => (local() ? local().blobUrl(id) : `/blob/${id}`);
+
+// Downloads and printing are not available inside the published preview.
+export function downloadBlob(id) {
+  if (local()) return local().unavailable('Prenos datotek');
+  location.href = `/blob/${id}?download=1`;
+}
+export function exportDocs(ids, shortcut = false) {
+  if (local()) return local().unavailable('Izvoz (ZIP)');
+  location.href = `/export?ids=${encodeURIComponent(ids.join(','))}${shortcut ? '&shortcut=1' : ''}`;
+}
+export function canPrint() { return !local(); }
+export function noPrint() { return local()?.unavailable('Tiskanje'); }
 
 let toastTimer = null;
 export function toast(text, ms = 5000) {
@@ -84,6 +108,7 @@ export function installTooltips() {
 }
 
 export function download(name, content, mime = 'text/plain;charset=utf-8') {
+  if (local()) return local().unavailable('Prenos datotek');
   const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

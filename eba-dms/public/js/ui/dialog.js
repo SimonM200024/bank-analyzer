@@ -1,6 +1,7 @@
 // Modal dialogs. Cancel/Escape/X always close without committing anything.
 import { esc, el } from './core.js';
 import { icon } from './icons.js';
+import { BRAND } from '/core/brand.js';
 
 const stack = [];
 export const dialogsOpen = () => stack.length > 0;
@@ -73,18 +74,18 @@ export function showError(api, e) {
   er.textContent = e?.message || String(e);
 }
 
-export function alertBox(text, { title = 'EBA DMS', kind = 'info' } = {}) {
+export function alertBox(text, { title = BRAND.name, kind = 'info' } = {}) {
   const ic = kind === 'error' ? 'cross' : kind === 'warn' ? 'help' : 'info';
   return dialog({ title, help: false, body: `<div class="msg">${icon(ic, 24)}<div>${esc(text)}</div></div>`, buttons: [{ label: 'V redu', primary: true }] });
 }
 
-export async function confirmBox(text, { title = 'EBA DMS', ok = 'Da', cancel = 'Ne' } = {}) {
+export async function confirmBox(text, { title = BRAND.name, ok = 'Da', cancel = 'Ne' } = {}) {
   const r = await dialog({ title, help: false, body: `<div class="msg">${icon('help', 24)}<div>${esc(text)}</div></div>`,
     buttons: [{ label: ok, primary: true, value: true }, { label: cancel, value: false }], closeValue: false });
   return r === true;
 }
 
-export async function promptBox(label, value = '', { title = 'EBA DMS', multiline = false } = {}) {
+export async function promptBox(label, value = '', { title = BRAND.name, multiline = false } = {}) {
   const input = multiline ? `<textarea class="win" rows="4" style="width:100%" autofocus>${esc(value)}</textarea>` : `<input class="win" style="width:100%" value="${esc(value)}" autofocus>`;
   const r = await dialog({ title, help: false, width: 380, body: `<div style="margin-bottom:6px">${esc(label)}</div>${input}`,
     buttons: [{ label: 'V redu', icon: 'check', primary: true, action: (d) => d.q('input,textarea').value }, { label: 'Prekliči', icon: 'cross', value: null }] });

@@ -128,6 +128,7 @@ export class MenuBar {
     });
     menubarState.bar = this;
   }
+  activate() { menubarState.bar = this; }
   refresh() {
     this.el.querySelectorAll('.mi').forEach((mi) => mi.classList.toggle('disabled', !!resolve(this.menus[+mi.dataset.i].disabled)));
   }

@@ -39,6 +39,19 @@ Log in with one of the demo users (password **`demo`** for all):
 | `lmlakar` | Luka Mlakar | JAVOR MG d.o.o. / Računovodstvo | Cross-company isolation demo |
 | `egolob` | Eva Golob | JAVOR MG d.o.o. / Direktor | Approvals in the second company |
 
+### Browser-only build (no server)
+
+```bash
+npm i -D esbuild
+npm run build:standalone   # dist/standalone.html and dist/standalone-preview.html
+```
+
+This bundles the same service, access checks and fixtures into one HTML file that runs entirely in the
+browser. State is kept in that browser's IndexedDB, and *Pomoč › Ponastavi demo podatke* resets it. Document
+windows open inside the page. Downloads, export and printing show a "not available" notice. This build uses
+neutral naming ("DMS") from `src/core/brand-neutral.js`, so it can be shared without the original product name;
+`--keep-brand` keeps the original labels.
+
 ### Reset the demo data
 
 ```bash

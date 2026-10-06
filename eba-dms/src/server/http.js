@@ -138,7 +138,7 @@ export function createApp({ dataDir, reset = false, clock } = {}) {
             svc.event(doc, 'Izvožen', user, { detail: shortcut ? 'Izvoz z bližnjico (ZIP)' : 'Izvoz (ZIP)' });
           }
           store.save();
-          return send(res, 200, zip(files), { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="eba-izvoz-${hexId(3)}.zip"` });
+          return send(res, 200, Buffer.from(zip(files)), { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="eba-izvoz-${hexId(3)}.zip"` });
         }
         const op = p.slice(5);
         const fn = Object.hasOwn(ALL_API, op) ? ALL_API[op] : null;

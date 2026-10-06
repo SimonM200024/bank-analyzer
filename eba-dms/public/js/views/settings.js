@@ -6,6 +6,7 @@ import { dialog, alertBox, confirmBox, promptBox, showError, tri, cycleTri } fro
 import { icon, large } from '../ui/icons.js';
 import { Grid } from '../ui/grid.js';
 import { fmtDatePadded, fmtDateTime, parseDate, isoLocal } from '/core/format.js';
+import { BRAND } from '/core/brand.js';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const MASK = '••••••••';
@@ -203,7 +204,7 @@ export async function appSettingsDialog(app) {
           <fieldset class="fieldset"><legend>Okoljske spremenljivke</legend><div class="whitebox" style="height:300px;overflow:auto"><table class="plain"><colgroup><col style="width:40%"><col></colgroup><thead><tr><th>Ključ</th><th>Vrednost</th></tr></thead>
           <tbody>${s.env.map((e, i) => `<tr data-i="${i}" class="${selEnv === i ? 'sel' : ''}"><td><input data-e="key" value="${esc(e.key)}" ${dis}></td><td><input data-e="value" type="${e.concealed ? 'password' : 'text'}" value="${esc(e.value)}" autocomplete="new-password" ${dis}></td></tr>`).join('')}</tbody></table></div>
           <div class="graybar"><button class="tb ea" ${dis}>${icon('plus')}Dodaj</button><button class="tb ec" ${dis}>${icon('plus')}Dodaj zakrito</button><button class="tb er" ${selEnv == null || !work.canEdit ? 'disabled' : ''}>${icon('minusGreen')}Odstrani</button></div>
-          <div class="demo-note">EBA_LIST_LIMIT omeji število prikazanih dokumentov v seznamih (prikaže se obvestilo o omejenem prikazu).</div></fieldset>
+          <div class="demo-note">${BRAND.env}_LIST_LIMIT omeji število prikazanih dokumentov v seznamih (prikaže se obvestilo o omejenem prikazu).</div></fieldset>
           <fieldset class="fieldset"><legend>Ostale nastavitve</legend><div class="form" style="grid-template-columns:auto 1fr auto auto auto">
           <label>Jezik:</label><select class="win" style="grid-column:span 4" ${dis}><option>Slovenščina</option></select>
           <label>Log folder:</label><span style="display:flex;gap:2px"><input class="win" style="flex:1" data-s="logFolder" value="${esc(s.logFolder)}" ${dis}><button class="btn lf" style="min-width:24px" ${dis}>…</button></span>
@@ -228,7 +229,7 @@ export async function appSettingsDialog(app) {
   async function apply() {
     const saved = await api('saveAppSettings', { connections: work.connections, system: work.system });
     Object.assign(work, clone(saved));
-    app.me.listLimit = (saved.system.env.find((e) => e.key === 'EBA_LIST_LIMIT') || {}).value;
+    app.me.listLimit = (saved.system.env.find((e) => e.key === `${BRAND.env}_LIST_LIMIT`) || {}).value;
     app.view?.refresh();
   }
   return catDialog({ title: 'Nastavitve', width: 752, height: 782, canApply: work.canEdit, render, apply,
@@ -325,7 +326,7 @@ async function partnerForm(app, p, companyId, oneTime = false) {
       <label class="r">Id za DDV:</label><span style="display:flex;gap:8px"><input class="win" style="flex:1" data-p="vatId" value="${esc(v.vatId || '')}" ${ro}><label class="chk"><input type="checkbox" data-p="vatPayer" ${v.vatPayer ? 'checked' : ''} ${can ? '' : 'disabled'}> Zavezanec za DDV</label></span>
       ${F('externalId', 'Zunanji id:')}
       <label class="r">Podjetje vnosa:</label><select class="win" disabled><option>${esc(app.me.companies.find((c) => c.id === companyId)?.name || '')}</option></select>
-      ${F('ebaId', 'EBA Id:')}</div>
+      ${F('ebaId', `${BRAND.barcode} Id:`)}</div>
       <div class="whitebox" style="margin-top:10px;height:100px;overflow:auto"><table class="plain ct"><colgroup><col style="width:14px"><col><col><col><col></colgroup><thead><tr><th></th><th>Ime</th><th>Email</th><th>Telefon</th><th>Opis</th></tr></thead><tbody>${contactRows()}</tbody></table></div>
       ${can ? '' : '<div class="demo-note">Vaša vloga nima pravice urejanja imenika.</div>'}`,
     onOpen: (d) => {

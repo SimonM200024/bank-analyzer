@@ -1,6 +1,6 @@
 // Document actions shared by the office grid, search results, toolbar and
 // document windows. Enablement mirrors server rules; the server re-checks.
-import { api, toast, download } from './ui/core.js';
+import { api, toast, download, exportDocs, canPrint, noPrint, blobUrl } from './ui/core.js';
 import { alertBox, confirmBox, promptBox } from './ui/dialog.js';
 import { pickHolders, classifyDialog, tagDialog, mailDialog, infoResult } from './dialogs.js';
 
@@ -107,8 +107,7 @@ export const act = {
   emptyClipboard(app) { app.clipboard = []; app.saveClipboard(); toast('Odložišče je izpraznjeno.'); },
   async mail(app, rows, kind) { return mailDialog(rows, kind); },
   async exportDocs(app, rows, shortcut = false) {
-    window.location.href = `/export?ids=${encodeURIComponent(ids(rows).join(','))}${shortcut ? '&shortcut=1' : ''}`;
-    setTimeout(() => app.changed(ids(rows)), 800);
+    if (exportDocs(ids(rows), shortcut) === undefined) setTimeout(() => app.changed(ids(rows)), 800);
   },
   async pantheonTransfer(app, rows) {
     const r = await run(app, 'pantheonTransfer', { ids: ids(rows) });
@@ -121,6 +120,7 @@ export const act = {
   },
   async printDocs(app, rows) {
     if (!rows.length) return;
+    if (!canPrint()) return noPrint();
     const pages = [];
     for (const r of rows) {
       try {
@@ -130,7 +130,7 @@ export const act = {
     }
     const area = document.createElement('div');
     area.className = 'print-area';
-    area.innerHTML = pages.map(({ p }) => p.mime.startsWith('image/') ? `<img src="/blob/${p.blobId}" style="width:100%;page-break-after:always">` : `<div style="page-break-after:always;font:14px Arial;padding:40px">${p.name} (PDF – natisnite iz pregledovalnika PDF)</div>`).join('');
+    area.innerHTML = pages.map(({ p }) => p.mime.startsWith('image/') ? `<img src="${blobUrl(p.blobId)}" style="width:100%;page-break-after:always">` : `<div style="page-break-after:always;font:14px Arial;padding:40px">${p.name} (PDF – natisnite iz pregledovalnika PDF)</div>`).join('');
     document.body.appendChild(area);
     await Promise.all([...area.querySelectorAll('img')].map((i) => i.decode().catch(() => {})));
     await api('recordOutput', { ids: ids(rows), kind: 'print' }).catch(() => {});

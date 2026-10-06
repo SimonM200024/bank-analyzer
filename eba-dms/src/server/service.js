@@ -16,6 +16,7 @@ import {
 } from './access.js';
 import { matchCriteria } from './search.js';
 import * as adapters from './adapters.js';
+import { BRAND } from '../core/brand.js';
 
 export const MASK = '••••••••';
 const DEFAULT_LIST_LIMIT = 1000;
@@ -48,7 +49,7 @@ export class Service {
   doc(id) { return this.s.documents.find((d) => d.id === id); }
 
   listLimit() {
-    const env = (this.s.settings.system.env || []).find((e) => e.key === 'EBA_LIST_LIMIT');
+    const env = (this.s.settings.system.env || []).find((e) => e.key.endsWith('_LIST_LIMIT'));
     const n = parseInt(env?.value, 10);
     return Number.isFinite(n) && n > 0 ? n : DEFAULT_LIST_LIMIT;
   }
@@ -956,7 +957,7 @@ export const API = {
   importSettingsFile(svc, user, a) {
     let data = a.data;
     if (typeof data === 'string') { try { data = JSON.parse(data); } catch { throw new ValidationError('Datoteka ni veljaven JSON.'); } }
-    need(data && typeof data === 'object' && data.kind === 'eba-dms-demo-personal-settings', 'Datoteka ni nastavitvena datoteka EBA DMS demo.');
+    need(data && typeof data === 'object' && /^(eba-)?dms-demo-personal-settings$/.test(data.kind), `Datoteka ni nastavitvena datoteka ${BRAND.name} demo.`);
     return API.savePersonal(svc, user, { scanner: data.scanner, other: data.other, columns: data.columns, view: data.view });
   },
 
@@ -1066,8 +1067,8 @@ export function defaultPersonal() {
   return {
     substitutions: [],
     scanner: {
-      moveImported: false, moveFolder: 'C:\\EBA-demo\\imported', renameImported: false, renamePattern: '#FILENAME#_imported(#DATE#).#SUFFIX#',
-      importFolder: '', exportFolder: 'C:\\EBA-demo\\export', noAutoSubject: false, noAutoDate: null, showClassification: false,
+      moveImported: false, moveFolder: `C:\\${BRAND.folder}\\imported`, renameImported: false, renamePattern: '#FILENAME#_imported(#DATE#).#SUFFIX#',
+      importFolder: '', exportFolder: `C:\\${BRAND.folder}\\export`, noAutoSubject: false, noAutoDate: null, showClassification: false,
       noOcrDefault: false, errorsOnlyData: false, selectFirst: false,
     },
     other: { trayOnClose: null, notifyForward: null, notifyGrant: null, noPopup: null, keepScrollbar: false },

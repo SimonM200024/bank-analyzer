@@ -1,6 +1,7 @@
 // Metadata schemas, field inventories and column definitions.
 // Labels are preserved exactly as observed in the installed client, including
 // unusual spellings ("izdajatelejeve", "Davčn", "refernčnega", "Panteon").
+import { BRAND } from './brand.js';
 
 export function slug(label) {
   return String(label)
@@ -75,7 +76,7 @@ export const SCOPES = [
   { id: 'dispatch', label: 'Odprema' },
 ];
 
-export const SOURCES = ['', 'EBA Exchange', 'Moj-eRačun Plugin', 'AS2 Exchange', 'IMAP Email Exchange', 'Microsoft Exchange', 'Uvoz'];
+export const SOURCES = ['', BRAND.exchange, 'Moj-eRačun Plugin', 'AS2 Exchange', 'IMAP Email Exchange', 'Microsoft Exchange', 'Uvoz'];
 
 export const SIGNATURE_STATES = ['Ni podpisan', 'Neveljaven podpis', 'Veljaven podpis', 'Veljaven podpis z nekvalificiranim certifikatom'];
 
