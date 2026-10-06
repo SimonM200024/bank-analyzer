@@ -189,11 +189,11 @@ export async function mountDocWindow(app, docId, { channel, host = null, onClose
       <button class="tb" data-a="sign" ${a.sign ? '' : 'disabled'}>${icon('padlock')}Podpiši<span class="dd">▼</span></button>
       <button class="tb" data-a="initial" ${a.initialInWindow ? '' : 'disabled'}>${icon(a.initialInWindow ? 'pen' : 'penGrey')}Parafiraj<span class="dd">▼</span></button>
       <button class="tb" data-a="claim" ${a.claim ? '' : 'disabled'}>${icon('check')}Prevzemi</button>
-      ${extSel ? `<select class="win ext" style="width:110px" ${a.extStatus ? '' : 'disabled'}>${EXTERNAL_STATUSES.map((s) => `<option value="${s.code}" ${s.code === d.externalStatus ? 'selected' : ''}>${s.code} - ${esc(s.label)}</option>`).join('')}</select>` : '<select class="win" style="width:110px" disabled><option></option></select>'}
+      ${extSel ? `<select class="win ext wide" style="width:110px" ${a.extStatus ? '' : 'disabled'}>${EXTERNAL_STATUSES.map((s) => `<option value="${s.code}" ${s.code === d.externalStatus ? 'selected' : ''}>${s.code} - ${esc(s.label)}</option>`).join('')}</select>` : '<select class="win" style="width:110px" disabled><option></option></select>'}
       <span class="tsep"></span>
       <button class="tb" data-a="forward" ${a.forwardInWindow ? '' : 'disabled'}>${icon('forward')}Posreduj</button>
       <button class="tb" data-a="actions" ${W.doc.claimedById === app.me.user.id ? '' : 'disabled'}>${icon('actions')}Akcije<span class="dd">▼</span></button>
-      <select class="win" style="width:120px" disabled title="Namen tega polja v zajemu ni bil ugotovljen; v repliki ni aktivno."><option></option></select>
+      <select class="win unk" style="width:120px" disabled title="Namen tega polja v zajemu ni bil ugotovljen; v repliki ni aktivno."><option></option></select>
       <span class="tsep"></span>
       <button class="tb" data-a="pantheon" ${a.pantheon ? '' : 'disabled'}>${icon('pantheon')}Prenesi v Pantheon</button>
       <button class="tb" data-a="pantheonLink" ${a.pantheon ? '' : 'disabled'}>${icon('pantheon')}Ročno poveži s Pantheon</button>`;
@@ -224,7 +224,7 @@ export async function mountDocWindow(app, docId, { channel, host = null, onClose
     const editable = allowed().save;
     const h = root.querySelector('.hdrs');
     h.innerHTML = `<span class="lab">Pošiljatelj:</span><input class="win hs" value="${esc(d.sender)}" ${editable ? '' : 'readonly'}>
-      <span style="display:flex;gap:2px"><select class="win" disabled style="width:110px">${SOURCES.map((s) => `<option ${s === d.source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></span>
+      <span style="display:flex;gap:2px"><select class="win wide" disabled style="width:110px">${SOURCES.map((s) => `<option ${s === d.source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></span>
       <span style="display:flex;gap:2px;align-items:center"><input class="win" value="${esc(d.filename)}" readonly style="width:${Math.min(900, Math.max(240, innerWidth * 0.33))}px"><button class="btn fn" style="min-width:22px;height:20px;padding:0" title="Prenesi izvorno datoteko">…</button></span>
       <span class="lab">Predmet:</span><input class="win hp" value="${esc(d.subject)}" ${editable ? '' : 'readonly'} style="grid-column: span 1">
       <span class="lab" style="grid-column: 3">Klas. št.:</span><input class="win" readonly value="${esc(d.classification || '')}" title="${esc(d.classification || '')}">`;
@@ -325,7 +325,7 @@ export async function mountDocWindow(app, docId, { channel, host = null, onClose
   // ----------------------------------------------------------- side panels
   function renderTabs() {
     const r = root.querySelector('.rtabs');
-    r.innerHTML = TABS.map(([id, label, ic]) => `<div class="rt ${W.tab === id ? 'active' : ''}" data-t="${id}" title="${label}">${icon(ic, 14)}${label}</div>`).join('');
+    r.innerHTML = TABS.map(([id, label, ic]) => `<div class="rt ${W.tab === id ? 'active' : ''}" data-t="${id}" title="${label}">${icon(ic, 14)}<span class="rl">${label}</span></div>`).join('');
     r.onclick = (e) => { const t = e.target.closest('[data-t]'); if (!t) return; W.tab = t.dataset.t; store.set('eba-doc-tab', W.tab); if (!W.details) { W.details = true; } renderSide(); renderTabs(); };
   }
   function renderSide() {

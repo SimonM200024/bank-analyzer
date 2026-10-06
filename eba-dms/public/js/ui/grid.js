@@ -1,7 +1,16 @@
 // Dense data grid: filter-arrow row, sortable/resizable headers, striped rows,
 // multi-select, value filters (Vsebuje / Ne vsebuje / Počisti), masks, expandable rows.
 import { fmtDate, fmtDateTime, fmtAmount, applyMask, escapeHtml as esc } from '/core/format.js';
-import { icon } from './icons.js';
+import { icon, isModern } from './icons.js';
+
+// The modern theme uses a larger type size and status pills, so saved column
+// widths (kept in classic units) are scaled when drawn.
+const SCALE = 1.16;
+const drawW = (c) => {
+  const w = c.w || 100;
+  if (!isModern() || w < 40) return w;
+  return Math.round(w * SCALE) + (c.type === 'status' ? 26 : 0);
+};
 
 export function cellText(col, row) {
   const v = col.get(row);
@@ -27,12 +36,15 @@ function sortValue(col, row) {
   return cellText(col, row).toLocaleLowerCase('sl');
 }
 
+const slug = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 function cellHtml(col, row) {
   const v = col.get(row);
   switch (col.type) {
     case 'sig': return v && v !== 'Ni podpisan' ? icon('lock', 15) : '';
     case 'note': return v === 'yellow' ? icon('star', 13) : v === 'blue' ? icon('starBlue', 13) : '';
     case 'attach': return v ? icon('clip', 14) : '';
+    case 'status': return v ? `<span class="pill st-${slug(v)}">${esc(v)}</span>` : '';
     default: return esc(cellText(col, row));
   }
 }
@@ -119,8 +131,8 @@ export class Grid {
   refresh() {
     this.computeView();
     const cols = this.columns;
-    const totalW = cols.reduce((s, c) => s + (c.w || 100), 0);
-    const head = `<colgroup>${cols.map((c) => `<col style="width:${c.w || 100}px">`).join('')}</colgroup>
+    const totalW = cols.reduce((s, c) => s + drawW(c), 0);
+    const head = `<colgroup>${cols.map((c) => `<col style="width:${drawW(c)}px">`).join('')}</colgroup>
       <thead><tr class="f">${cols.map((c) => `<th data-col="${esc(c.id)}"><span class="ftri${this.filters[c.id]?.values?.length ? ' on' : ''}" data-f="${esc(c.id)}">▼</span></th>`).join('')}</tr>
       <tr class="h">${cols.map((c) => {
         const s = this.sort?.id === c.id ? `<span class="srt">${this.sort.dir === 'desc' ? '⌄' : '⌃'}</span>` : '';
@@ -239,13 +251,14 @@ export class Grid {
   startResize(e, id) {
     e.preventDefault();
     const col = this.columns.find((c) => c.id === id);
-    const startX = e.clientX, startW = col.w || 100;
+    const startX = e.clientX, startW = drawW(col), k = drawW(col) / (col.w || 100);
     this.resizing = true;
     const colEl = this.table.querySelectorAll('col')[this.columns.indexOf(col)];
     const move = (ev) => {
-      col.w = Math.max(16, startW + ev.clientX - startX);
-      colEl.style.width = col.w + 'px';
-      this.table.style.width = this.columns.reduce((s, c) => s + (c.w || 100), 0) + 'px';
+      const px = Math.max(16, startW + ev.clientX - startX);
+      col.w = Math.max(16, Math.round(px / k));
+      colEl.style.width = px + 'px';
+      this.table.style.width = this.columns.reduce((s, c) => s + (c === col ? px : drawW(c)), 0) + 'px';
     };
     const up = () => {
       document.removeEventListener('mousemove', move);

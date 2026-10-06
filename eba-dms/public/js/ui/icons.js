@@ -90,9 +90,106 @@ const L = {
   system: '<path d="M21 3a7 7 0 0 0-6.4 9.8L4 23.4a2.6 2.6 0 0 0 3.7 3.7l10.6-10.6A7 7 0 0 0 28 10l-4.2 4.2-4.3-1.1-1.1-4.3z" fill="#c9a24a"/>',
 };
 
+// Line icons for the modern theme (24px grid, stroke follows currentColor).
+const S = (d, extra = '') => `<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"${extra}>${d}</g>`;
+const M = {
+  office: S('<path d="M3 13l2.5-7.5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>'),
+  docs: S('<path d="M3 13l2.5-7.5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>'),
+  search: S('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>'),
+  supervise: S('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/>'),
+  scanner: S('<rect x="3" y="13" width="18" height="6" rx="2"/><path d="M5 13l3-7h11"/><path d="M7 16h3"/>'),
+  process: S('<rect x="3" y="13" width="18" height="6" rx="2"/><path d="M5 13l3-7h11"/><path d="M7 16h3"/>'),
+  packages: S('<path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/>'),
+  log: S('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  folder: S('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  lock: S('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'),
+  lockGreen: S('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>', ' style="color:var(--m-ok)"'),
+  lockOlive: S('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>', ' style="color:var(--m-warn)"'),
+  padlock: S('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.5v2"/>'),
+  star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="var(--m-star)" stroke="var(--m-star)" stroke-width="1.2" stroke-linejoin="round"/>',
+  starOutline: S('<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/>'),
+  starBlue: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="none" stroke="var(--m-accent)" stroke-width="1.7" stroke-linejoin="round"/>',
+  clip: S('<path d="M15.5 7l-6.8 6.8a1.8 1.8 0 0 0 2.6 2.6L18.6 9a3.6 3.6 0 0 0-5.1-5.1L6.2 11.2a5.4 5.4 0 0 0 7.6 7.6L19 13.6"/>'),
+  attach: S('<path d="M15.5 7l-6.8 6.8a1.8 1.8 0 0 0 2.6 2.6L18.6 9a3.6 3.6 0 0 0-5.1-5.1L6.2 11.2a5.4 5.4 0 0 0 7.6 7.6L19 13.6"/>'),
+  sendrecv: S('<path d="M4 9a8 8 0 0 1 14.5-3"/><path d="M19 3v4h-4"/><path d="M20 15a8 8 0 0 1-14.5 3"/><path d="M5 21v-4h4"/>'),
+  pen: S('<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  penGrey: S('<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  cube: S('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>'),
+  forward: S('<path d="M14 5l6 6-6 6"/><path d="M20 11H10a6 6 0 0 0-6 6v1"/>'),
+  check: S('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  plus: S('<path d="M12 5v14M5 12h14"/>'),
+  minus: S('<path d="M5 12h14"/>'),
+  minusGreen: S('<path d="M5 12h14"/>'),
+  cross: S('<path d="M6 6l12 12M18 6L6 18"/>'),
+  crossSmall: S('<path d="M7 7l10 10M17 7L7 17"/>'),
+  refresh: S('<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/>'),
+  printer: S('<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>'),
+  export: S('<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>'),
+  import: S('<path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 3h16"/>'),
+  exit: S('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>'),
+  info: S('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+  help: S('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17v.3"/>'),
+  book: S('<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/>'),
+  backup: S('<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/>'),
+  columns: S('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/>'),
+  save: S('<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/>'),
+  actions: S('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>'),
+  image: S('<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
+  ball: S('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>'),
+  globe: S('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.3 3 14.7 0 18M12 3c-3 3.3-3 14.7 0 18"/>'),
+  links: S('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+  people: S('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>'),
+  users: S('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>'),
+  versions: S('<path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/>'),
+  sigs: S('<path d="M12 3l2.3 1.7 2.8-.2.9 2.7 2.3 1.6-.9 2.7.9 2.7-2.3 1.6-.9 2.7-2.8-.2L12 21l-2.3-1.7-2.8.2-.9-2.7L3.7 15.2l.9-2.7-.9-2.7 2.3-1.6.9-2.7 2.8.2z"/><path d="M9 12l2 2 4-4"/>'),
+  trail: S('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4M12 8v4l3 2"/>'),
+  cover: S('<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'),
+  zoomIn: S('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M11 8v6M8 11h6"/>'),
+  zoomOut: S('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M8 11h6"/>'),
+  fitH: S('<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/>'),
+  fitW: S('<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>'),
+  hHeight: S('<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/>'),
+  hWidth: S('<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>'),
+  scan: S('<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/>'),
+  sendUsers: S('<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>'),
+  comment: S('<path d="M4 5h16v11H9l-5 4z"/>'),
+  bulb: S('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/>'),
+  reset: S('<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/>'),
+  pantheon: S('<path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 21h18"/>'),
+  navFirst: S('<path d="M17 18l-6-6 6-6M7 6v12"/>'),
+  navPrev: S('<path d="M15 18l-6-6 6-6"/>'),
+  navNext: S('<path d="M9 18l6-6-6-6"/>'),
+  navLast: S('<path d="M7 18l6-6-6-6M17 6v12"/>'),
+  filterIcon: S('<path d="M4 5h16l-6 7.5V19l-4 2v-8.5z"/>'),
+  sortIcon: S('<path d="M7 4v16M3 16l4 4 4-4M14 6h7M14 11h5M14 16h3"/>'),
+  wrench: S('<path d="M14.5 6.5a4.5 4.5 0 0 0 5.6 5.6L13 19.2a2.2 2.2 0 0 1-3.2-3.2l7.1-7.1"/>'),
+  gear: S('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>'),
+  ruler: S('<rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/>'),
+  fullscreen: S('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>'),
+  key: S('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>'),
+  mail: S('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  tag: S('<path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
+  pdf: S('<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/>'),
+  dbIcon: S('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/>'),
+  db: S('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>'),
+  system: S('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+  subst: S('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 11-4.7"/><path d="M16 14l3 3-3 3M22 17h-7"/>'),
+  scanSettings: S('<rect x="3" y="13" width="18" height="6" rx="2"/><path d="M5 13l3-7h11"/>'),
+  other: S('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>'),
+  command: S('<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/>'),
+  eye: S('<path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/>'),
+};
+export const isModern = () => typeof document !== 'undefined' && document.body?.classList.contains('theme-modern');
+
 export function icon(name, size = 16) {
+  if (isModern() && M[name]) {
+    const s = size === 16 && L[name] ? 22 : size;
+    return `<svg class="mi-ic" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">${M[name]}</svg>`;
+  }
   if (L[name]) return `<svg width="${size === 16 ? 32 : size}" height="${size === 16 ? 32 : size}" viewBox="0 0 32 32" aria-hidden="true">${L[name]}</svg>`;
   const body = P[name] || '';
   return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${body}</svg>`;
 }
-export const large = (name, size = 32) => `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">${L[name] || ''}</svg>`;
+export const large = (name, size = 32) => (isModern() && M[name]
+  ? `<svg class="mi-ic" width="${Math.round(size * 0.66)}" height="${Math.round(size * 0.66)}" viewBox="0 0 24 24" aria-hidden="true">${M[name]}</svg>`
+  : `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">${L[name] || ''}</svg>`);

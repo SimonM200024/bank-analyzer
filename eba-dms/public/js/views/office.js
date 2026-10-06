@@ -4,6 +4,7 @@ import { Grid } from '../ui/grid.js';
 import { icon } from '../ui/icons.js';
 import { FOLDERS, SCOPES, findFolder, columnById, defaultColumnsFor } from '/core/schema.js';
 import { columnsDialog } from '../dialogs.js';
+import { mountPreview } from '../ui/preview.js';
 
 export function resolveColumns(app, key, category) {
   const saved = app.personal.columns?.[key];
@@ -50,6 +51,7 @@ export function mountOffice(app, pane, content) {
     emptyText: '',
   });
   app.grid = grid;
+  app.preview = mountPreview(app, content);
 
   function saveCols(cols) {
     app.savePersonal({ columns: { [st.folderId]: cols.map((c) => ({ id: c.id, w: c.w, mask: c.mask || '' })) } });

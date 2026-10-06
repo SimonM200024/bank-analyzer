@@ -32,7 +32,9 @@ const res = await esbuild.build({
   bundle: true, format: 'iife', target: 'es2022', minify: true, write: false, plugins: [resolver], charset: 'utf8', legalComments: 'none',
 });
 const js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
-const css = fs.readFileSync(path.join(ROOT, 'public', 'css', 'eba.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const readCss = (f) => fs.readFileSync(path.join(ROOT, 'public', 'css', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const css = readCss('eba.css') + '\n' + readCss('modern.css');
+const fonts = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">';
 const extraCss = `
 :root { color-scheme: light; }
 body { background: var(--bar); color: #000; }
@@ -48,13 +50,15 @@ body { background: var(--bar); color: #000; }
   .docwin .thumbs { display: none; }
   .docwin .side { position: absolute; right: 22px; top: 0; bottom: 0; width: min(320px, 82vw); min-width: 0; z-index: 6; box-shadow: -2px 0 8px rgba(0,0,0,.25); }
   .docwin .main { position: relative; }
-  .docwin .hdrs { grid-template-columns: auto 1fr; }
-  .docwin .hdrs > :nth-child(3), .docwin .hdrs > :nth-child(4) { display: none; }
+  .docwin .hdrs { grid-template-columns: auto minmax(0, 1fr); }
+  .docwin .hdrs > :nth-child(3), .docwin .hdrs > :nth-child(4) { display: none !important; }
+  .docwin .hdrs > :nth-child(7) { grid-column: 1 !important; }
+  .docwin .hdrs input.win { width: 100%; min-width: 0; }
   .intake .iform { width: 220px; }
   .crit .c .row select.op { width: 60px; }
 }`;
 const title = neutral ? 'Pisarna DMS Demo' : 'EBA DMS Demo';
-const body = `<title>${title}</title>\n<style>${css}\n${extraCss}</style>\n<script>${js}</script>\n`;
+const body = `<title>${title}</title>\n${fonts}\n<style>${css}\n${extraCss}</style>\n<script>${js}</script>\n`;
 fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'dist', 'standalone.html'), body);
 fs.writeFileSync(path.join(ROOT, 'dist', 'standalone-preview.html'),

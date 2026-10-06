@@ -10,7 +10,26 @@ every external integration.
 > All companies, people, invoices, identifiers and connection settings are invented.
 > The original reference screenshots (which contain real business data) are **not** part of this repository.
 
-![Office – incoming invoices](docs/screenshots/office.jpg)
+![Office – modern look](docs/screenshots/modern-office.jpg)
+
+## Two looks: Sodoben (default) and Klasičen (EBA)
+
+The app opens in a **modern look** modelled on the Photon design language (warm off-white ground, white cards,
+Geist type, pill buttons, violet accent, automatic dark mode). The faithful dense **classic EBA look** is one click
+away under **Pogled › Videz** (or the user menu); the choice is saved per user. Both looks use the same screens,
+menus, shortcuts, permissions and data; the modern look adds a few interaction aids:
+
+- **Predogled dokumenta** – a panel beside the Pisarna and Iskanje lists with the selected document's status,
+  amount, first page, key facts and last events, plus *Odpri / Prevzemi / Parafiraj / Posreduj / zaznamek*, so an
+  invoice can be checked and approved without opening its window. Multi-select shows the count and total.
+  Toggle under Pogled › Predogled dokumenta.
+- **Coloured status labels** for the external status (Prejet, Potrjen, Kontroliran, Prenešen v Pantheon).
+- **Iskanje ukazov** (Ctrl+Shift+P or `/`) – one box for documents, folders, views and every enabled menu command.
+- A cleaner **document window**: segmented Slika/Podatki and panel tabs along the top of the side panel.
+
+| Modern, dark – document window | Command search |
+|---|---|
+| ![](docs/screenshots/modern-document-dark.jpg) | ![](docs/screenshots/modern-palette.jpg) |
 
 ## Quick start
 
@@ -78,7 +97,8 @@ document; cover-sheet, data view and grid values agree; Uveljavi persists and Pr
 approval changes the status and routing and adds the expected audit events; unauthorized roles cannot read or
 modify restricted documents, through the API or the blob URLs; content edits keep earlier versions; imports
 keep the original file bytes and pages; changes survive a server restart; layouts fit at 2560×1392 and
-1366×768.
+1366×768; in the modern look the command search jumps to folders and finds commands, the preview approves an
+invoice without opening it, and the look switch is saved per user.
 
 ## What is implemented
 
@@ -117,7 +137,9 @@ eba-dms/
   public/                 vanilla ES-module UI (no build step)
     js/app.js             login, shell, menus, keyboard, module switching
     js/views/*.js         office, search, supervision, document window, scanner, settings/directory
-    js/ui/*.js            grid, menus, dialogs, icons, helpers
+    js/ui/*.js            grid, menus, dialogs, icons (classic + modern line set), preview panel, command search
+    css/eba.css           classic EBA look
+    css/modern.css        modern look (tokens for light/dark, scoped under body.theme-modern)
   tests/                  node:test unit + API tests, optional Playwright e2e and screenshot capture
 ```
 
@@ -200,8 +222,11 @@ These are implementation choices, not claims about EBA internals:
 - Folder paths in scanner preferences are stored but have no effect (the browser uploads files; originals are never moved or renamed).
 - Single-node local store intended for demos, not concurrent production use.
 - Help content is a short in-app summary plus this README.
+- The modern look loads the Geist typeface from Google Fonts; offline it falls back to the system UI font.
 
-## Screenshots (fictional data)
+## Screenshots (fictional data, classic look)
+
+![Office – classic look](docs/screenshots/office.jpg)
 
 | Document window | Search | Scanning room – batches |
 |---|---|---|

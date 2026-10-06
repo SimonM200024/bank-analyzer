@@ -359,7 +359,7 @@ export function mountScanner(app, pane, content, toolbar) {
   // ================================================================ PAKETI
   function mountPackages() {
     pane.style.width = '250px';
-    pane.innerHTML = `<div style="background:#7d8fa3;color:#fff;font-weight:700;padding:2px 6px;text-align:center">GLOBALNA SKENIRNICA</div><div class="tree" style="flex:1"></div>
+    pane.innerHTML = `<div class="gscan-h" style="background:#7d8fa3;color:#fff;font-weight:700;padding:2px 6px;text-align:center">GLOBALNA SKENIRNICA</div><div class="tree" style="flex:1"></div>
       <div class="pane-foot" style="display:flex;justify-content:center"><span class="tb tpl">Predloge</span></div>`;
     content.innerHTML = `<div class="findbar"><span>Najdi</span><input class="win find" value="${esc(st.find)}"></div><div class="batch-cards" style="flex:1;overflow:auto"></div>`;
     let batches = [];

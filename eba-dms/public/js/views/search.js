@@ -8,6 +8,7 @@ import { GENERAL_CRITERIA, CONTENT_FIELDS, OPS, PROFILES, CATEGORIES, DIRECTIONS
 import { fmtDate, parseDate } from '/core/format.js';
 import { resolveColumns } from './office.js';
 import { columnsDialog, pickHolders } from '../dialogs.js';
+import { mountPreview } from '../ui/preview.js';
 
 let seq = 0;
 const blankRow = (key) => ({ id: ++seq, key, op: null, value: '', extra: false });
@@ -41,9 +42,9 @@ export function mountSearch(app, pane, content) {
     <div class="crit"></div>
     <div class="crit-bottom"><label class="chk"><input type="checkbox" class="act" ${st.active ? 'checked' : ''}> Aktivni dokumenti</label><br><label class="chk"><input type="checkbox" class="arc" ${st.archived ? 'checked' : ''}> Dokumenti v hrambi</label></div>
     <div class="crit-actions"><button class="tb clr">${icon('cross', 12)}Počisti</button><button class="tb go">${icon('zoomIn', 14)}Išči</button></div>`;
-  content.innerHTML = `<div class="tabline"><span class="tab">Iskanje (<span class="n">0</span>)</span><span class="tb x" data-tip="Zapri iskanje">${icon('cross', 14)}</span><span class="tb nw" data-tip="Novo iskanje">${icon('plus', 14)}</span></div>
+  content.innerHTML = `<div class="tabwrap" style="flex:1;display:flex;flex-direction:column;min-height:0;min-width:0"><div class="tabline"><span class="tab">Iskanje (<span class="n">0</span>)</span><span class="tb x" data-tip="Zapri iskanje">${icon('cross', 14)}</span><span class="tb nw" data-tip="Novo iskanje">${icon('plus', 14)}</span></div>
     <div class="findbar"><span>Najdi</span><input class="win find" value="${esc(st.find)}"></div>
-    <div class="gridhost" style="flex:1;display:flex;min-height:0"></div>`;
+    <div class="gridhost" style="flex:1;display:flex;min-height:0"></div></div>`;
   pane.querySelector('.dir').value = st.direction;
   const crit = pane.querySelector('.crit');
 
@@ -63,6 +64,7 @@ export function mountSearch(app, pane, content) {
     onColumnsChange: (cols) => app.savePersonal({ columns: { search: cols.map((c) => ({ id: c.id, w: c.w, mask: c.mask || '' })) } }),
   });
   app.grid = grid;
+  app.preview = mountPreview(app, content, { office: false });
 
   const fieldOf = (key) => GENERAL_CRITERIA.find((f) => f.key === key) || CONTENT_FIELDS.find((f) => f.key === key);
   function optionsFor(f) {

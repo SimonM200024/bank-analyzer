@@ -223,3 +223,46 @@ test('scanning room: demo scan, import a file, send to my office, intake log', {
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('modern UX: command palette, preview approval, theme switch persists', { skip }, async () => {
+  const { ctx, page, errors } = await login('jkovac');
+  assert.ok(await page.evaluate(() => document.body.classList.contains('theme-modern')));
+  await page.selectOption('.pane-foot select', 'office');
+  await page.waitForTimeout(300);
+  // Palette jumps to a folder.
+  await page.keyboard.press('Control+Shift+P');
+  await page.fill('.cmdp input', 'prejeto');
+  await page.click('.cmdp .it:has-text("Prejeto")');
+  await page.waitForTimeout(400);
+  assert.match(await page.textContent('.tree .node.selected'), /Prejeto/);
+  // Preview shows the selected invoice and approves it without opening it.
+  const before = await rowCount(page);
+  assert.ok(before > 0);
+  await page.click('table.grid tbody tr:nth-child(1)');
+  await page.waitForSelector('.preview .pv-thumb img');
+  assert.match(await page.textContent('.preview .pv-eyebrow'), /Prejet/);
+  assert.match(await page.textContent('.preview .pv-amount'), /EUR/);
+  await page.click('.preview [data-p="initial"]');
+  await page.waitForFunction((n) => document.querySelectorAll('table.grid tbody tr').length === n - 1, before);
+  // Palette finds documents and menu commands.
+  await page.keyboard.press('Control+Shift+P');
+  await page.fill('.cmdp input', 'osebne nast');
+  await page.waitForSelector('.cmdp .it:has-text("Osebne nastavitve")');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.cmdp').count(), 0);
+  // Pogled › Videz › Klasičen (EBA) is saved per user.
+  await page.click('.menubar .mi:has-text("Pogled")');
+  await page.hover('.menu .row:has-text("Videz")');
+  await page.click('.menu .row:has-text("Klasičen (EBA)")');
+  await page.waitForFunction(() => !document.body.classList.contains('theme-modern'));
+  await page.reload();
+  await page.waitForSelector('table.grid tbody tr');
+  assert.equal(await page.evaluate(() => document.body.classList.contains('theme-modern')), false);
+  assert.equal(await page.locator('.preview').isVisible(), false);
+  await page.click('.menubar .mi:has-text("Pogled")');
+  await page.hover('.menu .row:has-text("Videz")');
+  await page.click('.menu .row:has-text("Sodoben")');
+  await page.waitForFunction(() => document.body.classList.contains('theme-modern'));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

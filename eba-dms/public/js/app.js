@@ -4,7 +4,9 @@ import { api, esc, el, toast, download, pickFiles, setUnauthorizedHandler, insta
 import { BRAND } from '/core/brand.js';
 import { MenuBar, openMenu, contextMenu, menuKeydown, menusOpen, closeMenus } from './ui/menu.js';
 import { dialog, alertBox, dialogsOpen } from './ui/dialog.js';
-import { icon, large } from './ui/icons.js';
+import { icon, large, isModern } from './ui/icons.js';
+import { openPalette, menuCommands } from './ui/palette.js';
+import { FOLDERS } from '/core/schema.js';
 import { selectedLabel, fmtDateTime, isoLocal } from '/core/format.js';
 import { can, act } from './actions.js';
 import { aboutDialog, changePasswordDialog, lockScreen, infoResult } from './dialogs.js';
@@ -31,6 +33,29 @@ function rootEl() {
   if (!r) { r = document.createElement('div'); r.id = 'dms-root'; document.body.appendChild(r); }
   return r;
 }
+
+// ============================================================= theme
+const CLASSIC = BRAND.classic;
+// "Sodoben" (modern, default) or the classic look. Saved per user; the last
+// choice is remembered locally so the login screen matches before sign-in.
+function themeOf() {
+  let local = null;
+  try { local = localStorage.getItem('dms-theme'); } catch { /* ignore */ }
+  return app.personal?.view?.theme || local || 'modern';
+}
+function applyTheme(theme = themeOf()) {
+  document.body.classList.toggle('theme-modern', theme !== 'classic');
+  document.body.classList.toggle('no-preview', app.personal?.view?.preview === false);
+  try { localStorage.setItem('dms-theme', theme); } catch { /* ignore */ }
+}
+async function setTheme(theme) {
+  if (theme === themeOf()) return;
+  await app.savePersonal({ view: { theme } });
+  applyTheme(theme);
+  renderShell();
+  toast(theme === 'classic' ? `Videz: ${CLASSIC}.` : 'Videz: Sodoben.');
+}
+applyTheme();
 
 // ============================================================= login
 function showLogin(message = '') {
@@ -70,6 +95,7 @@ async function start() {
   try { app.me = await api('whoami'); } catch (e) { if (e.status === 401) return showLogin(); throw e; }
   app.personal = app.me.personal;
   app.companyId = app.me.defaultCompanyId;
+  applyTheme();
   if (!isStandalone() && location.hash.startsWith('#/doc/')) {
     const { mountDocWindow } = await import('./views/docwin.js');
     return mountDocWindow(app, location.hash.slice(6), { channel });
@@ -94,15 +120,68 @@ function renderShell() {
   bindSplitter();
   switchModule(app.module);
   tickClock();
-  setInterval(tickClock, 15000);
+  app.clockTimer ||= setInterval(tickClock, 15000);
 }
 
 function renderModstrip() {
   const ms = $('.modstrip');
   const scan = app.me.companies.some((c) => app.me.flags[c.id]?.scan);
+  const initials = app.me.user.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   ms.innerHTML = `<div class="modtab ${app.module === 'docs' ? 'active' : ''}" data-m="docs">${large('docs', 18)}Dokumenti</div>
-    ${scan ? `<div class="modtab ${app.module === 'scanner' ? 'active' : ''}" data-m="scanner">${large('scanner', 18)}Skenirnica</div>` : ''}`;
-  ms.onclick = (e) => { const t = e.target.closest('[data-m]'); if (t) switchModule(t.dataset.m); };
+    ${scan ? `<div class="modtab ${app.module === 'scanner' ? 'active' : ''}" data-m="scanner">${large('scanner', 18)}Skenirnica</div>` : ''}
+    <div class="modright"><button class="cmdk" data-tip="Iskanje dokumentov, map in ukazov (Ctrl+Shift+P ali /)">${icon('search', 16)}<span class="lbl">Išči dokumente, mape, ukaze …</span><kbd>Ctrl ⇧ P</kbd></button>
+    <button class="userchip" aria-haspopup="menu"><span class="av">${esc(initials)}</span><span class="nm">${esc(app.me.user.name)}</span></button></div>`;
+  ms.onclick = (e) => {
+    const t = e.target.closest('[data-m]');
+    if (t) return switchModule(t.dataset.m);
+    if (e.target.closest('.cmdk')) return commandPalette();
+    const u = e.target.closest('.userchip');
+    if (u) { e.stopPropagation(); const r = u.getBoundingClientRect(); openMenu(userMenu(), Math.max(8, r.right - 240), r.bottom + 6); }
+  };
+}
+
+function userMenu() {
+  return [
+    { label: `${app.me.user.name} (${app.me.user.username})`, bold: true, disabled: true },
+    { sep: true },
+    { label: 'Osebne nastavitve', icon: 'gear', action: async () => (await import('./views/settings.js')).personalSettingsDialog(app) },
+    { label: 'Spremeni geslo', icon: 'key', action: () => changePasswordDialog() },
+    { label: `Videz: ${CLASSIC}`, icon: 'eye', action: () => setTheme('classic') },
+    { sep: true },
+    { label: 'Zakleni program', icon: 'lock', action: () => lockScreen(app) },
+    { label: 'Odjava', icon: 'exit', action: () => logout() },
+  ];
+}
+
+function goView(module, view) {
+  if (module === 'docs') app.docView = view; else app.scanView = view;
+  if (app.module !== module) return switchModule(module);
+  return mountView();
+}
+
+function commandPalette() {
+  if (!app.me || app.overlay) return;
+  closeMenus();
+  const places = [];
+  const sup = app.me.companies.some((c) => app.me.flags[c.id]?.supervise);
+  const scan = app.me.companies.some((c) => app.me.flags[c.id]?.scan);
+  places.push({ label: 'Pisarna', path: 'Dokumenti', icon: 'office', run: () => goView('docs', 'office') });
+  places.push({ label: 'Iskanje', path: 'Dokumenti', icon: 'search', run: () => goView('docs', 'search') });
+  if (sup) places.push({ label: 'Skrbništvo', path: 'Dokumenti', icon: 'supervise', run: () => goView('docs', 'supervision') });
+  if (scan) for (const [v, l, ic] of [['process', 'Obdelava', 'process'], ['packages', 'Paketi', 'packages'], ['log', 'Dnevnik', 'log']]) places.push({ label: l, path: 'Skenirnica', icon: ic, run: () => goView('scanner', v) });
+  const walk = (list, path) => {
+    for (const f of list) {
+      if (path.length) places.push({ label: f.label, path: `Pisarna › ${path.join(' › ')}`, icon: f.view ? 'eye' : 'folder', run: () => { app.office.folderId = f.id; goView('docs', 'office'); } });
+      if (f.children) walk(f.children, [...path, f.label]);
+    }
+  };
+  walk(FOLDERS, []);
+  openPalette({
+    commands: menuCommands(mainMenus()),
+    places,
+    docs: async () => (await api('search', { companyId: app.companyId, criteria: { active: true, archived: true, rows: [] } })).rows,
+    onDoc: (r) => app.openDocument(r),
+  });
 }
 
 function bindSplitter() {
@@ -141,7 +220,7 @@ async function mountView() {
   };
   const pane = $('.pane'), content = $('.content');
   pane.style.display = ''; $('.splitter').style.display = '';
-  app.selection = []; app.grid = null;
+  app.selection = []; app.grid = null; app.preview = null;
   content.innerHTML = ''; pane.innerHTML = '';
   if (app.module === 'docs') {
     renderDocToolbar();
@@ -216,6 +295,7 @@ async function showLog() {
 app.setSelection = (rows) => {
   app.selection = rows;
   $('.statusbar .sel').textContent = selectedLabel(rows.length);
+  app.preview?.update(rows);
   updateToolbar();
   app.menubar?.refresh();
 };
@@ -324,7 +404,7 @@ function mainMenus() {
   const sel = () => app.selection;
   const scanner = app.module === 'scanner';
   const v = () => app.personal.view || {};
-  const setView = async (patch) => { await app.savePersonal({ view: patch }); if (!scanner) renderDocToolbar(); else app.view?.refresh(); };
+  const setView = async (patch) => { await app.savePersonal({ view: patch }); applyTheme(); if (!scanner) renderDocToolbar(); else app.view?.refresh(); app.preview?.update(app.selection); };
   const menus = [
     { label: 'Datoteka', mnemonic: 'D', items: () => [
       { label: 'Odjava', action: () => logout() },
@@ -353,6 +433,10 @@ function mainMenus() {
       { label: 'Osveži', icon: 'refresh', shortcut: 'F5', action: () => app.view?.refresh() },
       { label: 'Pogled dokumenta', items: [], disabled: true, title: 'Na voljo v oknu dokumenta.' },
       { label: 'Podrobnosti o dokumentu', shortcut: 'Ctrl+D', checked: v().details !== false, action: () => setView({ details: v().details === false }) },
+      { sep: true },
+      { label: 'Predogled dokumenta', checked: v().preview !== false, disabled: !isModern(), title: 'Na voljo v sodobnem videzu.', action: () => setView({ preview: v().preview === false }) },
+      { label: 'Videz', items: () => [['modern', 'Sodoben'], ['classic', CLASSIC]].map(([k, l]) => ({ label: l, checked: themeOf() === k, action: () => setTheme(k) })) },
+      { label: 'Iskanje ukazov', icon: 'search', shortcut: 'Ctrl+Shift+P', action: () => commandPalette() },
     ] },
   ];
   if (!scanner) {
@@ -373,7 +457,7 @@ function mainMenus() {
       { label: 'Nastavitve', action: async () => (await import('./views/settings.js')).appSettingsDialog(app) },
       { label: 'Spremeni geslo', action: () => changePasswordDialog() },
     ] },
-    { label: 'Okno', mnemonic: 'K', items: () => windowMenu() },
+    { label: 'Okno', mnemonic: 'K', noPalette: true, items: () => windowMenu() },
     { label: 'Pantheon 5.5', items: () => [
       { label: 'Sinhroniziraj partnerje', action: () => pantheonSync('partners') },
       { label: 'Sinhroniziraj podatke', action: () => pantheonSync('data') },
@@ -454,7 +538,8 @@ function helpDialog() {
     • <b>Skrbništvo</b> – pregled dokumentov po pisarnah (za vloge s skrbništvom).<br>
     • <b>Skenirnica</b> – Obdelava (skeniraj/uvozi, polja, pošlji uporabnikom), Paketi (globalna skenirnica), Dnevnik.<br><br>
     <b>Potek računa</b>: prejem → direktorica <i>Prevzemi</i> in <i>Parafiraj (Potrdi)</i> → pravilo posreduje v računovodstvo (zunanji status 0 → 1).<br><br>
-    <b>Bližnjice</b>: Del, Ctrl+C, Ctrl+Shift+C, Ctrl+D, Ctrl+V, Ctrl+K, Ctrl+P, Ctrl+Q, F1, Alt+črka za menije.<br><br>
+    <b>Videz</b>: Pogled › Videz preklaplja med sodobnim in ${BRAND.classicAdj} videzom. V sodobnem videzu je desno od seznama predogled izbranega dokumenta z najpogostejšimi akcijami.<br><br>
+    <b>Bližnjice</b>: Ctrl+Shift+P ali / (iskanje dokumentov, map in ukazov), Del, Ctrl+C, Ctrl+Shift+C, Ctrl+D, Ctrl+V, Ctrl+K, Ctrl+P, Ctrl+Q, F1, Alt+črka za menije.<br><br>
     <span class="demo-note">Integracije (${BRAND.exchange}, Moj-eRačun, AS2, IMAP, Microsoft Exchange, Pantheon, e-pošta, skener, OCR, register) so demo adapterji,
     ki ne kličejo zunanjih storitev. Podpisi so demo zapisi brez kriptografske veljavnosti. ${isStandalone() ? 'Ta predogled teče v brskalniku: stanje se hrani le v vašem brskalniku, prenosi datotek in tiskanje niso na voljo. Ponastavitev: Pomoč › Ponastavi demo podatke.' : 'Podrobnosti: README.md.'}</span></div>`,
     buttons: [{ label: 'Zapri', primary: true }] });
@@ -472,7 +557,9 @@ document.addEventListener('keydown', (e) => {
   const rows = app.selection;
   const ctrl = e.ctrlKey || e.metaKey;
   let handled = true;
-  if (e.key === 'F1') helpDialog();
+  if (ctrl && e.shiftKey && k === 'p') commandPalette();
+  else if (e.key === '/' && !inField && app.module === 'docs') commandPalette();
+  else if (e.key === 'F1') helpDialog();
   else if (e.key === 'F5') app.view?.refresh();
   else if (ctrl && k === 'p') { if (rows.length) act.printDocs(app, rows); }
   else if (ctrl && k === 'q') exitApp();

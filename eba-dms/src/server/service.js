@@ -1073,7 +1073,7 @@ export function defaultPersonal() {
     },
     other: { trayOnClose: null, notifyForward: null, notifyGrant: null, noPopup: null, keepScrollbar: false },
     columns: {},
-    view: { iconSize: 'small', textMode: 'beside', toolbar: true, details: true },
+    view: { iconSize: 'small', textMode: 'beside', toolbar: true, details: true, theme: 'modern', preview: true },
   };
 }
 
